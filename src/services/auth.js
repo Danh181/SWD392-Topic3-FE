@@ -2,13 +2,11 @@ import axios from 'axios';
 
 const BASE_URL = 'http://localhost:8080';
 
-// axios instance
 const API = axios.create({
 	baseURL: BASE_URL,
 	headers: { 'Content-Type': 'application/json' },
 });
 
-// Token helpers
 const ACCESS_TOKEN_KEY = 'accessToken';
 const REFRESH_TOKEN_KEY = 'refreshToken';
 
@@ -25,12 +23,11 @@ function setTokens({ accessToken, refreshToken }) {
 	if (refreshToken) localStorage.setItem(REFRESH_TOKEN_KEY, refreshToken);
 }
 
-function clearTokens() {
-	localStorage.removeItem(ACCESS_TOKEN_KEY);
-	localStorage.removeItem(REFRESH_TOKEN_KEY);
+export function clearTokens() {
+    localStorage.removeItem(ACCESS_TOKEN_KEY);
+    localStorage.removeItem(REFRESH_TOKEN_KEY);
 }
 
-// Attach Authorization header automatically when access token exists
 API.interceptors.request.use(cfg => {
 	const token = getAccessToken();
 	if (token) {
@@ -40,23 +37,34 @@ API.interceptors.request.use(cfg => {
 	return cfg;
 });
 
-// Optional: central error parsing for API responses wrapped in ApiResponse
 function parseApiError(err) {
-	if (err.response && err.response.data) {
-		const body = err.response.data;
-		// validation errors may have fieldErrors
-		if (body.fieldErrors) return { message: body.message || 'Validation error', fieldErrors: body.fieldErrors };
-		if (body.message || body.error) return { message: body.message || body.error };
+	try {
+		if (err.response?.data) {
+			const body = err.response.data;
+			// support cases where API wraps payload in `data`
+			const payload = body.data || body;
+			const fieldErrors = payload.fieldErrors || body.fieldErrors || payload.errors || body.errors;
+			const message = body.message || payload.message || body.error || payload.error;
+			if (fieldErrors) return { message: message || 'Validation error', fieldErrors };
+			if (message) return { message };
+		}
+	} catch (e) {
+		console.warn('parseApiError internal error', e, err);
 	}
-	return { message: err.message || 'Unknown error' };
+	// fallback to generic message and include status/text when available
+	const fallback = { message: err.message || 'Unknown error' };
+	if (err.response) {
+		fallback.status = err.response.status;
+		fallback.statusText = err.response.statusText;
+	}
+	return fallback;
 }
 
-// Auth methods
+
 export async function register(payload) {
-	// payload must match RegisterRequest: email, password, confirmPassword, phone, firstName, lastName, dateOfBirthStr, identityNumber
 	try {
 		const res = await API.post('/api/auth/register', payload);
-		return res.data; // ApiResponse<RegisterResponse>
+		return res.data;
 	} catch (err) {
 		throw parseApiError(err);
 	}
@@ -65,7 +73,7 @@ export async function register(payload) {
 export async function login({ email, password }) {
 	try {
 		const res = await API.post('/api/auth/login', { email, password });
-		const api = res.data; // { message, data }
+		const api = res.data;
 		const data = api?.data || {};
 		setTokens({ accessToken: data.accessToken, refreshToken: data.refreshToken });
 		return api;
@@ -87,14 +95,27 @@ export async function refresh(refreshToken) {
 	}
 }
 
+export async function getProfile() {
+		const paths = ['/api/profile', '/api/auth/me', '/api/users/me', '/api/me', '/api/users/current'];
+	for (const p of paths) {
+		try {
+			const res = await API.get(p);
+			if (res?.data?.data) return res.data.data;
+			if (res?.data) return res.data;
+		} catch (e) {
+			// ignore and try next path
+			console.debug('getProfile try failed for', p, e?.message ?? e);
+		}
+	}
+	return null;
+}
+
 export async function logout() {
 	try {
-		// interceptor already attaches access token
 		await API.post('/api/auth/logout', {});
 		clearTokens();
 		return { message: 'Logged out' };
 	} catch (err) {
-		// still clear tokens locally
 		clearTokens();
 		throw parseApiError(err);
 	}

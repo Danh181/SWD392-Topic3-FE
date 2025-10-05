@@ -54,11 +54,11 @@ const Register = () => {
     const newErrors = {};
     const { firstName, lastName, email, password, confirmPassword, dateOfBirth, identityNumber, phone } = formData;
 
-    if (!firstName || !firstName.trim()) {
+    if (!firstName?.trim()) {
       newErrors.firstName = 'Vui lòng nhập họ';
     }
 
-    if (!lastName || !lastName.trim()) {
+    if (!lastName?.trim()) {
       newErrors.lastName = 'Vui lòng nhập tên';
     }
 
@@ -86,13 +86,10 @@ const Register = () => {
       newErrors.dateOfBirth = 'Vui lòng chọn ngày sinh';
     }
 
-    // identityNumber is optional per backend; if provided, validate basic format (digits)
-    if (identityNumber && identityNumber.trim() && !/^\d{6,20}$/.test(identityNumber.trim())) {
+    if (identityNumber?.trim() && !/^\d{6,20}$/.test(identityNumber.trim())) {
       newErrors.identityNumber = 'Số CMND/CCCD không hợp lệ';
     }
-
-    // phone is optional but if provided, validate a simple format (digits, 7-15)
-    if (phone && phone.trim() && !/^\+?[0-9]{7,15}$/.test(phone.trim())) {
+    if (phone?.trim() && !/^\+?\d{7,15}$/.test(phone.trim())) {
       newErrors.phone = 'Số điện thoại không hợp lệ';
     }
 
@@ -111,7 +108,7 @@ const Register = () => {
         phone: formData.phone || null,
         firstName: formData.firstName,
         lastName: formData.lastName,
-        dateOfBirthStr: formData.dateOfBirth,
+        dateOfBirth: formData.dateOfBirth,
         identityNumber: formData.identityNumber || null,
       };
 
@@ -119,7 +116,6 @@ const Register = () => {
         .then(res => {
           setLoading(false);
           const message = res?.message || 'Đăng ký thành công';
-          // show a small toast then redirect to login
           Swal.fire({
             toast: true,
             position: 'top-end',
@@ -137,14 +133,24 @@ const Register = () => {
           if (err.fieldErrors) {
             setErrors(prev => ({ ...prev, ...err.fieldErrors }));
           } else {
-            // generic error
-            setErrors(prev => ({ ...prev, form: err.message || 'Đã có lỗi xảy ra' }));
+            const msg = err.message || 'Đã có lỗi xảy ra';
+            setErrors(prev => ({ ...prev, form: msg }));
+            // show a nicer toast so the user immediately sees the error
+            try {
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            } catch {}
+            Swal.fire({
+              toast: true,
+              position: 'top-end',
+              icon: 'error',
+              title: msg,
+              showConfirmButton: false,
+              timer: 3500,
+            });
           }
         });
     }
   };
-
-  // Battery-related color: #00b894 (teal/green, like lithium battery)
   return (
     <div
       className="min-h-screen w-full flex items-center justify-center"
@@ -297,7 +303,7 @@ const Register = () => {
           )}
         </div>
 
-        {/* Confirm Password */}
+        
         <div className="mb-6">
           <label htmlFor="confirmPassword" className="block text-gray-700">Xác nhận mật khẩu</label>
           <div className="mt-1 relative">

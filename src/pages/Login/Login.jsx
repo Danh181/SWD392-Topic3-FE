@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import Swal from 'sweetalert2';
 import { useNavigate } from 'react-router-dom';
-import { login as loginUser } from '../../services/auth';
+import { login as loginUser, getAccessToken, getRefreshToken } from '../../services/auth';
+import { useAuth } from '../../context/AuthContext';
 
 const Login = () => {
 
@@ -23,32 +24,39 @@ const Login = () => {
         return true;
     }
 
+    const { login: authLogin } = useAuth();
+
     const handleLogin = async (e) => {
         e.preventDefault();
 
         if (!validationForm()) return;
 
+        setloading(true);
+        const loadingAlert = Swal.fire({
+            title: 'Đang đăng nhập...',
+            allowOutsideClick: false,
+            didOpen: () => Swal.showLoading(),
+        });
+
         try {
-                setloading(true);
-                const loadingAlert = Swal.fire({
-                    title: 'Đang đăng nhập...',
-                    allowOutsideClick: false,
-                    didOpen: () => Swal.showLoading(),
-                });
+            await loginUser({ email: formData.email, password: formData.password });
+            loadingAlert.close();
+            
+        
+            const accessToken = getAccessToken();
+            const refreshToken = getRefreshToken();
+            authLogin(null, { accessToken, refreshToken });
 
-                // call API via auth service
-                await loginUser({ email: formData.email, password: formData.password });
-                loadingAlert.close();
-
-                Swal.fire({ icon: 'success', title: 'Đăng nhập thành công', showConfirmButton: false, timer: 1200 });
-                // redirect to home or dashboard
-                navigate('/');
+            await Swal.fire({ icon: 'success', title: 'Đăng nhập thành công', showConfirmButton: false, timer: 1200 });
+            
+            navigate('/dashboard/HomePage');
         } catch (error) {
             let errorMessage = 'Đăng nhập thất bại. Vui lòng thử lại sau';
             if (error.message) errorMessage = error.message;
             await Swal.fire({ icon: 'error', title: 'Đăng nhập thất bại', text: errorMessage });
+        } finally {
+            setloading(false);
         }
-        finally { setloading(false); }
     };
     return (
         <div
@@ -95,12 +103,12 @@ const Login = () => {
                             className="absolute right-2 top-1/2 -translate-y-1/2 text-sm text-gray-600 bg-white p-1 rounded-md border border-gray-200 hover:bg-gray-50"
                         >
                             {showPassword ? (
-                                // eye-off icon
+                            
                                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" className="w-4 h-4">
                                     <path strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" d="M17.94 17.94A10.94 10.94 0 0 1 12 19c-5 0-9.27-3-11-7 1.02-2.18 2.6-3.99 4.56-5.27M3 3l18 18" />
                                 </svg>
                             ) : (
-                                // eye icon
+                                
                                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" className="w-4 h-4">
                                     <path strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" d="M2.46 12C3.73 7.6 7.61 5 12 5s8.27 2.6 9.54 7c-1.27 4.4-5.15 7-9.54 7S3.73 16.4 2.46 12z" />
                                     <circle cx="12" cy="12" r="3" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
@@ -115,13 +123,13 @@ const Login = () => {
                     <button
                         type="button"
                         className="text-[#00b894] hover:underline text-sm font-medium"
-                        onClick={() => {/* handle forgot password */}}
+                        onClick={() => {}}
                     >
                         Quên mật khẩu?
                     </button>
                 </div>
 
-                {/* Login button */}
+                
                 <button
                     type="submit"
                     disabled={loading}
@@ -130,7 +138,7 @@ const Login = () => {
                     {loading ? 'Đang đăng nhập...' : 'Đăng nhập'}
                 </button>
 
-                {/* Register button */}
+                
                 <button
                     type="button"
                     className="w-full border border-[#00b894] text-[#00b894] font-bold py-2 px-4 rounded-md hover:bg-[#e0f7f1] transition-colors"
