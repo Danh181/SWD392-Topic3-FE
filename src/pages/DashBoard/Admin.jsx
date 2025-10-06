@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { useNavigate } from 'react-router-dom';
+import Swal from 'sweetalert2';
 import {
   LayoutDashboard,
   Users,
@@ -7,15 +9,19 @@ import {
   LogOut,
   Menu,
 } from "lucide-react"; // icon đẹp (npm install lucide-react)
+import { useAuth } from '../../context/AuthContext';
+import { logout as apiLogout, default as API } from '../../services/auth';
 
 const Admin = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const navigate = useNavigate();
+  const { logout: contextLogout } = useAuth();
 
   const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen);
 
   return (
     <div className="flex h-screen bg-gray-100">
-      {/* Sidebar */}
+      
       <aside
         className={`bg-[#00b894] text-white p-4 transition-all duration-300 ${
           isSidebarOpen ? "w-64" : "w-20"
@@ -69,7 +75,40 @@ const Admin = () => {
               </a>
             </li>
             <li>
-              <button className="flex items-center gap-3 p-2 rounded hover:bg-red-500 w-full">
+              <button
+                onClick={async () => {
+                  
+                  const result = await Swal.fire({
+                    title: 'Đăng xuất',
+                    text: 'Bạn có chắc chắn muốn đăng xuất không?',
+                    icon: 'question',
+                    showCancelButton: true,
+                    confirmButtonText: 'Đăng xuất',
+                    cancelButtonText: 'Hủy',
+                  });
+                  if (!result.isConfirmed) return;
+
+                  // Immediately clear client auth state and remove Authorization header
+                  try {
+                    contextLogout();
+                  } catch (e) {
+                    console.warn('contextLogout failed, clearing localStorage', e);
+                    localStorage.removeItem('accessToken');
+                    localStorage.removeItem('refreshToken');
+                    localStorage.removeItem('user');
+                  }
+                  try { delete API.defaults.headers.common.Authorization; } catch (e) { console.warn('failed to delete default auth header', e); }
+
+                  // Fire-and-forget backend logout
+                  (async () => {
+                    try { await apiLogout(); } catch (e) { console.warn('apiLogout failed', e); }
+                  })();
+
+                  await Swal.fire({ icon: 'success', title: 'Đã đăng xuất' , showConfirmButton: false, timer: 1000 });
+                  navigate('/login');
+                }}
+                className="flex items-center gap-3 p-2 rounded hover:bg-red-500 w-full"
+              >
                 <LogOut /> {isSidebarOpen && "Đăng xuất"}
               </button>
             </li>
@@ -77,13 +116,13 @@ const Admin = () => {
         </nav>
       </aside>
 
-      {/* Main content */}
+      
       <main className="flex-1 p-6 overflow-y-auto">
         <h1 className="text-2xl font-bold text-gray-700 mb-4">
           Trang Quản Trị EV Battery Swapper 🚀
         </h1>
 
-        {/* Cards section */}
+        
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
           <div className="bg-white p-6 rounded-xl shadow">
             <h3 className="text-lg font-semibold">Tổng số User</h3>
@@ -99,7 +138,7 @@ const Admin = () => {
           </div>
         </div>
 
-        {/* Table example */}
+        
         <div className="bg-white p-6 rounded-xl shadow">
           <h2 className="text-xl font-semibold mb-4">Danh sách trạm gần đây</h2>
           <table className="w-full text-left border-collapse">

@@ -1,18 +1,29 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from '../../context/AuthContext';
+import Header from '../../components/Header';
 
 const HomePage = () => {
   const navigate = useNavigate();
-  const user = JSON.parse(localStorage.getItem("user"));
+  const { user, hasRole } = useAuth();
+  let displayName = null;
+  if (user) {
+    const given = user.firstName || user.username || user.email || '';
+    const family = user.lastName ? ` ${user.lastName}` : '';
+    displayName = (given + family).trim() || null;
+  }
 
   return (
     <div className="min-h-screen bg-gray-100 flex flex-col items-center p-8">
-      <h1 className="text-3xl font-bold text-[#00b894] mb-4">
-        Xin chào, {user?.username || "Người dùng"} 👋
-      </h1>
+      <Header />
+        <div className="w-full max-w-4xl flex items-center justify-between mb-4">
+        <h1 className="text-3xl font-bold text-[#00b894]">
+          Xin chào, {displayName || 'Người dùng'} 👋
+        </h1>
+      </div>
       <p className="text-gray-700 mb-8">Chào mừng đến với hệ thống EV Battery Swapper</p>
 
-      {/* Các chức năng chung */}
+      
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full max-w-4xl">
         <button
           onClick={() => navigate("/profile")}
@@ -30,8 +41,8 @@ const HomePage = () => {
           <p className="text-gray-600 mt-2">Xem thông báo mới nhất từ hệ thống</p>
         </button>
 
-        {/* Nếu là ADMIN */}
-        {user?.role === "ADMIN" && (
+        
+        {hasRole("ADMIN") && (
           <button
             onClick={() => navigate("/admin/dashboard")}
             className="bg-white shadow-lg rounded-xl p-6 hover:shadow-2xl transition"
@@ -41,8 +52,8 @@ const HomePage = () => {
           </button>
         )}
 
-        {/* Nếu là CUSTOMER */}
-        {user?.role === "CUSTOMER" && (
+        
+        {hasRole("CUSTOMER") && (
           <button
             onClick={() => navigate("/customer/home")}
             className="bg-white shadow-lg rounded-xl p-6 hover:shadow-2xl transition"
@@ -52,8 +63,8 @@ const HomePage = () => {
           </button>
         )}
 
-        {/* Nếu là STATION_STAFF */}
-        {user?.role === "STATION_STAFF" && (
+        
+        {hasRole("STATION_STAFF") && (
           <button
             onClick={() => navigate("/staff/schedule")}
             className="bg-white shadow-lg rounded-xl p-6 hover:shadow-2xl transition"
