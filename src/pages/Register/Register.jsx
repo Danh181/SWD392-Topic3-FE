@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import Swal from 'sweetalert2';
 import { register as registerUser } from '../../services/auth';
+import bgImage from '../../assets/login/login.png';
 
 const Register = () => {
 
@@ -46,6 +47,22 @@ const Register = () => {
         else nextErrors.confirmPassword = '';
       }
 
+      if (name === 'dateOfBirth') {
+        if (!value) {
+          nextErrors.dateOfBirth = 'Vui lòng chọn ngày sinh';
+        } else {
+          const selectedDate = new Date(value);
+          const today = new Date();
+          today.setHours(0, 0, 0, 0);
+          
+          if (selectedDate > today) {
+            nextErrors.dateOfBirth = 'Ngày sinh không được là ngày tương lai';
+          } else {
+            nextErrors.dateOfBirth = '';
+          }
+        }
+      }
+
       return nextErrors;
     });
   };
@@ -84,6 +101,14 @@ const Register = () => {
 
     if (!dateOfBirth) {
       newErrors.dateOfBirth = 'Vui lòng chọn ngày sinh';
+    } else {
+      const selectedDate = new Date(dateOfBirth);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0); // Reset time to start of day for accurate comparison
+      
+      if (selectedDate > today) {
+        newErrors.dateOfBirth = 'Ngày sinh không được là ngày tương lai';
+      }
     }
 
     if (identityNumber?.trim() && !/^\d{6,20}$/.test(identityNumber.trim())) {
@@ -154,13 +179,17 @@ const Register = () => {
   return (
     <div
       className="min-h-screen w-full flex items-center justify-center"
-      style={{ backgroundColor: '#00b894' }}
+      style={{
+        backgroundImage: `url(${bgImage})`,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+      }}
     >
       <form
         onSubmit={handleSubmit}
         className="bg-white p-10 rounded-2xl shadow-2xl w-full max-w-xl" // wider form
       >
-        <h2 className="text-3xl font-bold text-center mb-2 text-[#00b894]">
+        <h2 className="text-3xl font-bold text-center mb-2 text-[#0028b8]">
           Đăng ký
         </h2>
         <p className="text-center text-sm mb-6 text-gray-500">
@@ -177,7 +206,7 @@ const Register = () => {
               name="firstName"
               value={formData.firstName}
               onChange={handleChange}
-              className="mt-1 w-full px-3 py-2 border border-[#00b894] rounded-md focus:outline-none focus:ring-2 focus:ring-[#00b894]"
+              className="mt-1 w-full px-3 py-2 border border-[#0028b8] rounded-md focus:outline-none focus:ring-2 focus:ring-[#0028b8]"
             />
             {errors.firstName && (
               <p className="text-red-500 text-sm">{errors.firstName}</p>
@@ -193,7 +222,7 @@ const Register = () => {
               name="lastName"
               value={formData.lastName}
               onChange={handleChange}
-              className="mt-1 w-full px-3 py-2 border border-[#00b894] rounded-md focus:outline-none focus:ring-2 focus:ring-[#00b894]"
+              className="mt-1 w-full px-3 py-2 border border-[#0028b8] rounded-md focus:outline-none focus:ring-2 focus:ring-[#0028b8]"
             />
             {errors.lastName && (
               <p className="text-red-500 text-sm">{errors.lastName}</p>
@@ -211,7 +240,8 @@ const Register = () => {
               name="dateOfBirth"
               value={formData.dateOfBirth}
               onChange={handleChange}
-              className="mt-1 w-full px-3 py-2 border border-[#00b894] rounded-md focus:outline-none focus:ring-2 focus:ring-[#00b894]"
+              max={new Date().toISOString().split('T')[0]}
+              className="mt-1 w-full px-3 py-2 border border-[#0028b8] rounded-md focus:outline-none focus:ring-2 focus:ring-[#0028b8]"
             />
             {errors.dateOfBirth && (
               <p className="text-red-500 text-sm">{errors.dateOfBirth}</p>
@@ -227,7 +257,7 @@ const Register = () => {
               name="identityNumber"
               value={formData.identityNumber}
               onChange={handleChange}
-              className="mt-1 w-full px-3 py-2 border border-[#00b894] rounded-md focus:outline-none focus:ring-2 focus:ring-[#00b894]"
+              className="mt-1 w-full px-3 py-2 border border-[#0028b8] rounded-md focus:outline-none focus:ring-2 focus:ring-[#0028b8]"
             />
             {errors.identityNumber && (
               <p className="text-red-500 text-sm">{errors.identityNumber}</p>
@@ -244,7 +274,7 @@ const Register = () => {
             name="phone"
             value={formData.phone}
             onChange={handleChange}
-            className="mt-1 w-full px-3 py-2 border border-[#00b894] rounded-md focus:outline-none focus:ring-2 focus:ring-[#00b894]"
+            className="mt-1 w-full px-3 py-2 border border-[#0028b8] rounded-md focus:outline-none focus:ring-2 focus:ring-[#0028b8]"
             placeholder="Ví dụ: +84901234567"
           />
           {errors.phone && (
@@ -261,7 +291,7 @@ const Register = () => {
             name="email"
             value={formData.email}
             onChange={handleChange}
-            className="mt-1 w-full px-3 py-2 border border-[#00b894] rounded-md focus:outline-none focus:ring-2 focus:ring-[#00b894]"
+            className="mt-1 w-full px-3 py-2 border border-[#0028b8] rounded-md focus:outline-none focus:ring-2 focus:ring-[#0028b8]"
           />
           {errors.email && (
             <p className="text-red-500 text-sm">{errors.email}</p>
@@ -278,7 +308,7 @@ const Register = () => {
               name="password"
               value={formData.password}
               onChange={handleChange}
-              className="w-full pr-12 px-3 py-2 border border-[#00b894] rounded-md focus:outline-none focus:ring-2 focus:ring-[#00b894]"
+              className="w-full pr-12 px-3 py-2 border border-[#0028b8] rounded-md focus:outline-none focus:ring-2 focus:ring-[#0028b8]"
             />
             <button
               type="button"
@@ -313,7 +343,7 @@ const Register = () => {
               name="confirmPassword"
               value={formData.confirmPassword}
               onChange={handleChange}
-              className="w-full pr-12 px-3 py-2 border border-[#00b894] rounded-md focus:outline-none focus:ring-2 focus:ring-[#00b894]"
+              className="w-full pr-12 px-3 py-2 border border-[#0028b8] rounded-md focus:outline-none focus:ring-2 focus:ring-[#0028b8]"
             />
             <button
               type="button"
@@ -341,7 +371,7 @@ const Register = () => {
         <button
           type="submit"
           disabled={loading}
-          className="w-full bg-[#00b894] hover:bg-[#009e7d] text-white font-bold py-2 px-4 rounded-md transition-colors mb-4"
+          className="w-full bg-[#0028b8] hover:bg-[#0028b8] text-white font-bold py-2 px-4 rounded-md transition-colors mb-4"
         >
           {loading ? "Đang đăng ký..." : "Register"}
         </button>
@@ -350,7 +380,7 @@ const Register = () => {
           <span className="text-gray-600 text-sm mr-1">Đã có tài khoản?</span>
           <Link
             to="/login"
-            className="text-[#00b894] font-semibold hover:underline text-sm"
+            className="text-[#0028b8] font-semibold hover:underline text-sm"
           >
             Đăng nhập ngay
           </Link>
