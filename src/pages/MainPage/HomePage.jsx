@@ -21,32 +21,24 @@ const HomePage = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-[#0028b8] flex flex-col items-center justify-center p-8">
+    <div className="min-h-screen bg-[#E9EBEE] flex flex-col items-center p-8 pt-24">
       <Header />
 
-      <div className="w-full max-w-4xl flex flex-col items-center mb-8 text-center">
-        <h1 className="text-3xl font-bold text-white mb-2">
+      <div className="w-full max-w-4xl flex flex-col items-center mb-8 text-center mt-4">
+        <h1 className="text-3xl font-bold text-[#0028b8] mb-2">
           {user ? `Xin chào, ${displayName} 👋` : "Chào mừng bạn đến với EV Battery Swapper"}
         </h1>
-        <p className="text-white mb-6">
+        <p className="text-[#0028b8] mb-6">
           {user
             ? "Chào mừng đến với hệ thống EV Battery Swapper"
             : "Bạn có thể xem các mẫu xe hỗ trợ đổi pin dưới đây hoặc đăng nhập để trải nghiệm đầy đủ"}
         </p>
 
-        {!user && (
-          <button
-            onClick={() => navigate("/login")}
-            className="mb-8 px-6 py-3 bg-white text-[#0028b8] font-bold rounded-lg shadow hover:bg-gray-100 transition"
-          >
-            Đăng nhập ngay
-          </button>
-        )}
       </div>
 
       {/* Demo cars */}
       <div className="w-full max-w-5xl mb-8">
-        <h2 className="text-2xl font-bold text-white mb-4 text-center">Các mẫu xe hỗ trợ đổi pin</h2>
+        <h2 className="text-2xl font-bold text-[#0028b8] mb-4 text-center">Các mẫu xe hỗ trợ đổi pin</h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {demoCars.map((car) => (
             <div key={car.id} className="bg-white p-4 rounded-xl shadow-lg hover:shadow-2xl transition flex flex-col items-center">
@@ -63,24 +55,15 @@ const HomePage = () => {
       {user && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full max-w-4xl">
           <button
-            onClick={() => navigate("/profile")}
-            className="bg-white shadow-lg rounded-xl p-6 hover:shadow-2xl transition"
-          >
-            <h2 className="text-xl font-semibold text-[#0028b8]">Thông tin cá nhân</h2>
-            <p className="text-gray-600 mt-2">Xem và chỉnh sửa thông tin tài khoản</p>
-          </button>
-
-          <button
             onClick={() => navigate("/notifications")}
             className="bg-white shadow-lg rounded-xl p-6 hover:shadow-2xl transition"
           >
             <h2 className="text-xl font-semibold text-[#0028b8]">Thông báo</h2>
             <p className="text-gray-600 mt-2">Xem thông báo mới nhất từ hệ thống</p>
           </button>
-
           {hasRole("ADMIN") && (
             <button
-              onClick={() => navigate("/admin/dashboard")}
+              onClick={() => navigate("/dashboard/admin")}
               className="bg-white shadow-lg rounded-xl p-6 hover:shadow-2xl transition"
             >
               <h2 className="text-xl font-semibold text-[#0028b8]">Quản lý hệ thống</h2>

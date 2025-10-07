@@ -6,7 +6,7 @@ import { useNavigate } from 'react-router-dom';
 import Swal from 'sweetalert2';
 
 const ProfileUser = () => {
-  const { user, setUser, logout } = useAuth();
+  const { user, setUser, logout, hasRole } = useAuth();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [profile, setProfile] = useState(user || null);
@@ -64,11 +64,11 @@ const ProfileUser = () => {
     try { await apiLogout(); } catch (e) { console.warn('apiLogout failed', e); }
     try { logout(); } catch (e) { console.warn('context logout failed, clearing localStorage', e); localStorage.removeItem('accessToken'); localStorage.removeItem('refreshToken'); localStorage.removeItem('user'); }
     await Swal.fire({ icon: 'success', title: 'Đã đăng xuất', showConfirmButton: false, timer: 900 });
-    navigate('/login');
+    navigate('/mainpage/HomePage');
   };
 
   return (
-    <div className="min-h-screen p-6 bg-gray-50 flex items-start justify-center">
+    <div className="min-h-screen p-6 bg-gray-50 flex items-start justify-center pt-24">
       <div className="w-full max-w-4xl mx-auto">
         <div className="bg-white shadow-md rounded-xl overflow-hidden">
           <div className="p-6 md:p-8 flex flex-col md:flex-row gap-6">
@@ -106,6 +106,14 @@ const ProfileUser = () => {
                   >
                     Chỉnh sửa
                   </button>
+                  {hasRole('ADMIN') && (
+                    <button 
+                      onClick={() => navigate('/dashboard/admin')} 
+                      className="px-4 py-2 bg-green-600 text-white rounded-md text-sm hover:bg-green-700 transition-colors"
+                    >
+                      Vào trang Admin
+                    </button>
+                  )}
                   <button onClick={() => navigate('/mainpage/HomePage')} className="px-4 py-2 bg-gray-100 rounded-md text-sm hover:bg-gray-200">Quay lại</button>
                   <button onClick={handleLogout} className="px-4 py-2 bg-red-600 text-white rounded-md text-sm hover:bg-red-700">Đăng xuất</button>
                 </div>

@@ -43,36 +43,47 @@ const Admin = () => {
         <nav>
           <ul className="space-y-3">
             <li>
-              <a
-                href="/admin/dashboard"
-                className="flex items-center gap-3 p-2 rounded hover:bg-[#009e7d]"
+              <button
+                onClick={() => Swal.fire({ icon: 'info', title: 'Chức năng đang phát triển', text: 'Dashboard sẽ có sớm!' })}
+                className="flex items-center gap-3 p-2 rounded hover:bg-[#009e7d] w-full text-left"
               >
                 <LayoutDashboard /> {isSidebarOpen && "Dashboard"}
-              </a>
+              </button>
             </li>
             <li>
-              <a
-                href="/admin/users"
-                className="flex items-center gap-3 p-2 rounded hover:bg-[#009e7d]"
+              <button
+                onClick={() => Swal.fire({ icon: 'info', title: 'Chức năng đang phát triển', text: 'Quản lý Users sẽ có sớm!' })}
+                className="flex items-center gap-3 p-2 rounded hover:bg-[#009e7d] w-full text-left"
               >
                 <Users /> {isSidebarOpen && "Quản lý Users"}
-              </a>
+              </button>
             </li>
             <li>
-              <a
-                href="/admin/stations"
-                className="flex items-center gap-3 p-2 rounded hover:bg-[#009e7d]"
+              <button
+                onClick={() => Swal.fire({ icon: 'info', title: 'Chức năng đang phát triển', text: 'Quản lý trạm sẽ có sớm!' })}
+                className="flex items-center gap-3 p-2 rounded hover:bg-[#009e7d] w-full text-left"
               >
                 <Battery /> {isSidebarOpen && "Trạm sạc/đổi pin"}
-              </a>
+              </button>
             </li>
             <li>
-              <a
-                href="/admin/reports"
-                className="flex items-center gap-3 p-2 rounded hover:bg-[#009e7d]"
+              <button
+                onClick={() => Swal.fire({ icon: 'info', title: 'Chức năng đang phát triển', text: 'Báo cáo sẽ có sớm!' })}
+                className="flex items-center gap-3 p-2 rounded hover:bg-[#009e7d] w-full text-left"
               >
                 <FileBarChart /> {isSidebarOpen && "Báo cáo"}
-              </a>
+              </button>
+            </li>
+            <li>
+              <button
+                onClick={() => navigate('/mainpage/HomePage')}
+                className="flex items-center gap-3 p-2 rounded hover:bg-[#009e7d] w-full text-left"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                </svg>
+                {isSidebarOpen && "Về trang chủ"}
+              </button>
             </li>
             <li>
               <button
@@ -105,7 +116,7 @@ const Admin = () => {
                   })();
 
                   await Swal.fire({ icon: 'success', title: 'Đã đăng xuất' , showConfirmButton: false, timer: 1000 });
-                  navigate('/login');
+                  navigate('/mainpage/HomePage');
                 }}
                 className="flex items-center gap-3 p-2 rounded hover:bg-red-500 w-full"
               >

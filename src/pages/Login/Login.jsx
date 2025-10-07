@@ -25,7 +25,7 @@ const Login = () => {
         return true;
     }
 
-    const { login: authLogin } = useAuth();
+    const { login: authLogin, hasRole } = useAuth();
 
     const handleLogin = async (e) => {
         e.preventDefault();
@@ -50,7 +50,26 @@ const Login = () => {
 
             await Swal.fire({ icon: 'success', title: 'Đăng nhập thành công', showConfirmButton: false, timer: 1200 });
             
-            navigate('/mainpage/HomePage');
+            // Get role from token directly for immediate redirect
+            const token = getAccessToken();
+            let userRole = null;
+            if (token) {
+              try {
+                const payload = JSON.parse(atob(token.split('.')[1]));
+                userRole = payload.role;
+              } catch (e) {
+                console.warn('Failed to parse token for role', e);
+              }
+            }
+            
+            // Redirect based on role
+            if (userRole === 'ADMIN') {
+              navigate('/dashboard/admin');
+            } else if (userRole === 'STATION_STAFF') {
+              navigate('/staff/dashboard');
+            } else {
+              navigate('/mainpage/HomePage');
+            }
         } catch (error) {
             let errorMessage = 'Đăng nhập thất bại. Vui lòng thử lại sau';
             if (error.message) errorMessage = error.message;

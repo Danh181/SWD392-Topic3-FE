@@ -190,7 +190,7 @@ const EditProfile = () => {
   }
 
   return (
-    <div className="min-h-screen p-6 bg-gray-50">
+    <div className="min-h-screen p-6 bg-gray-50 pt-24">
       <div className="max-w-2xl mx-auto">
         <div className="bg-white shadow-md rounded-xl overflow-hidden">
           <div className="p-6">

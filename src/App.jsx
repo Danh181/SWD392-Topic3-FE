@@ -5,6 +5,7 @@ import Admin from "./pages/DashBoard/Admin";
 import HomePage from "./pages/MainPage/HomePage";
 import ProfileUser from './pages/Profile/pages/ProfileUser';
 import EditProfile from './pages/Profile/pages/EditProfile';
+import StaffDashboard from './pages/Staff/StaffDashboard';
 
 function App() {
   return (
@@ -15,6 +16,7 @@ function App() {
         <Route path="/register" element={<Register />} />
         <Route path="/login" element={<Login />} />
         <Route path="/dashboard/admin" element={<Admin />} />
+        <Route path="/staff/dashboard" element={<StaffDashboard />} />
 
         {/* Profile routes */}
         <Route path="/profile" element={<ProfileUser />} />
