@@ -13,6 +13,7 @@ import { useAuth } from '../../context/AuthContext';
 import { logout as apiLogout, clearTokens, default as API } from '../../services/auth';
 import { getUsers, getUsersByRole } from '../../services/admin';
 import { resolveAssetUrl } from '../../services/user';
+import { getAllStations, createStation, updateStation, changeStationStatus } from '../../services/station';
 
 const Admin = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
@@ -20,11 +21,13 @@ const Admin = () => {
   const { logout: contextLogout } = useAuth();
 
   const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen);
-  const [activeView, setActiveView] = useState('overview'); // overview | users
+  const [activeView, setActiveView] = useState('overview'); // overview | users | stations
   const [users, setUsers] = useState([]);
+  const [stations, setStations] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [selectedRole, setSelectedRole] = useState('ALL'); // ALL | ADMIN | CUSTOMER | STAFF
+  const [selectedRole, setSelectedRole] = useState('ALL');
+  const [selectedStationStatus, setSelectedStationStatus] = useState('ALL'); // ALL | ADMIN | CUSTOMER | STATION_STAFF
   const [userCount, setUserCount] = useState(0);
   const [searchQuery, setSearchQuery] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
@@ -65,6 +68,20 @@ const Admin = () => {
     } catch (e) {
       console.error('Failed to load user count:', e);
       // keep previous count on error
+    }
+  };
+
+  const loadStations = async () => {
+    try {
+      setLoading(true);
+      setError('');
+      const data = await getAllStations();
+      setStations(data);
+    } catch (e) {
+      setError(e?.message || 'Không thể tải danh sách trạm');
+      console.error('Failed to load stations:', e);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -121,10 +138,10 @@ const Admin = () => {
             </li>
             <li>
               <button
-                onClick={() => Swal.fire({ icon: 'info', title: 'Chức năng đang phát triển', text: 'Quản lý trạm sẽ có sớm!' })}
+                onClick={() => { setActiveView('stations'); loadStations(); }}
                 className="flex items-center gap-3 p-2 rounded hover:bg-[#009e7d] w-full text-left"
               >
-                <Battery /> {isSidebarOpen && "Trạm sạc/đổi pin"}
+                <Battery /> {isSidebarOpen && "Quản lý trạm"}
               </button>
             </li>
             <li>
@@ -371,6 +388,358 @@ const Admin = () => {
                   </div>
                 </div>
               </>
+            )}
+          </div>
+        )}
+
+        {activeView === 'stations' && (
+          <div className="bg-white p-6 rounded-xl shadow">
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-4">
+              <div>
+                <h2 className="text-xl font-semibold">Quản lý Trạm</h2>
+                <p className="text-xs text-gray-500">Tổng số trạm: <span className="font-semibold">{stations.length}</span></p>
+              </div>
+              <div className="flex flex-wrap items-center gap-3">
+                <div className="flex items-center gap-2">
+                  <label htmlFor="station-status-select" className="text-sm text-gray-600">Trạng thái:</label>
+                  <select
+                    id="station-status-select"
+                    value={selectedStationStatus}
+                    onChange={(e) => setSelectedStationStatus(e.target.value)}
+                    className="border rounded px-3 py-1 text-sm"
+                  >
+                    <option value="ALL">Tất cả</option>
+                    <option value="OPERATIONAL">OPERATIONAL</option>
+                    <option value="MAINTENANCE">MAINTENANCE</option>
+                    <option value="CLOSED">CLOSED</option>
+                  </select>
+                </div>
+                <button 
+                  onClick={() => {
+                    Swal.fire({
+                      title: 'Thêm trạm mới',
+                      html: `
+                        <div class="space-y-3">
+                          <input id="name" class="w-full px-3 py-2 border rounded" placeholder="Tên trạm" />
+                          <input id="address" class="w-full px-3 py-2 border rounded" placeholder="Địa chỉ" />
+                          <input id="totalCapacity" type="number" class="w-full px-3 py-2 border rounded" placeholder="Sức chứa pin" />
+                          <input id="totalSwapBays" type="number" class="w-full px-3 py-2 border rounded" placeholder="Số vị trí đổi pin" />
+                          <input id="openingTime" class="w-full px-3 py-2 border rounded" placeholder="Giờ mở cửa (HH:mm)" />
+                          <input id="closingTime" class="w-full px-3 py-2 border rounded" placeholder="Giờ đóng cửa (HH:mm)" />
+                          <input id="contactPhone" class="w-full px-3 py-2 border rounded" placeholder="Số điện thoại liên hệ" />
+                          <input id="contactEmail" class="w-full px-3 py-2 border rounded" placeholder="Email liên hệ" />
+                          <textarea id="description" class="w-full px-3 py-2 border rounded" placeholder="Mô tả"></textarea>
+                          <input id="imageUrl" class="w-full px-3 py-2 border rounded" placeholder="URL hình ảnh" />
+                        </div>
+                      `,
+                      showCancelButton: true,
+                      confirmButtonText: 'Thêm',
+                      cancelButtonText: 'Hủy',
+                      preConfirm: () => {
+                        try {
+                          const data = {
+                            name: document.getElementById('name').value.trim(),
+                            address: document.getElementById('address').value.trim(),
+                            totalCapacity: parseInt(document.getElementById('totalCapacity').value),
+                            totalSwapBays: parseInt(document.getElementById('totalSwapBays').value),
+                            openingTime: document.getElementById('openingTime').value.trim(),
+                            closingTime: document.getElementById('closingTime').value.trim(),
+                            contactPhone: document.getElementById('contactPhone').value.trim(),
+                            contactEmail: document.getElementById('contactEmail').value.trim(),
+                            description: document.getElementById('description').value.trim(),
+                            imageUrl: document.getElementById('imageUrl').value.trim()
+                          };
+
+                          // Validate empty fields
+                          if (!data.name || !data.address || !data.totalCapacity || !data.totalSwapBays || 
+                              !data.openingTime || !data.closingTime || !data.contactPhone || 
+                              !data.contactEmail || !data.description || !data.imageUrl) {
+                            Swal.showValidationMessage('Vui lòng điền đầy đủ thông tin');
+                            return false;
+                          }
+
+                          // Validate time format (HH:mm)
+                          const timeRegex = /^([01]\d|2[0-3]):([0-5]\d)$/;
+                          if (!timeRegex.test(data.openingTime) || !timeRegex.test(data.closingTime)) {
+                            Swal.showValidationMessage('Giờ mở cửa và đóng cửa phải theo định dạng HH:mm (ví dụ: 08:00)');
+                            return false;
+                          }
+
+                          // Validate numeric fields
+                          if (data.totalCapacity <= 0 || data.totalSwapBays <= 0) {
+                            Swal.showValidationMessage('Sức chứa và số vị trí đổi pin phải lớn hơn 0');
+                            return false;
+                          }
+
+                          // Validate email format
+                          const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                          if (!emailRegex.test(data.contactEmail)) {
+                            Swal.showValidationMessage('Email liên hệ không hợp lệ');
+                            return false;
+                          }
+
+                          // Validate phone format (allow +84 or 0 prefix)
+                          const phoneRegex = /^(\+84|0)\d{9,10}$/;
+                          if (!phoneRegex.test(data.contactPhone)) {
+                            Swal.showValidationMessage('Số điện thoại không hợp lệ (phải bắt đầu bằng +84 hoặc 0)');
+                            return false;
+                          }
+
+                          console.log('Creating station with data:', data);
+                          return createStation(data)
+                            .then(() => {
+                              loadStations();
+                              return true;
+                            })
+                            .catch(error => {
+                              console.error('Failed to create station:', error);
+                              const errorMessage = error?.response?.data?.message || error?.message || 'Có lỗi xảy ra khi tạo trạm';
+                              console.log('Error message:', errorMessage);
+                              Swal.showValidationMessage(errorMessage);
+                              return false;
+                            });
+                        } catch (error) {
+                          console.error('Error in form validation:', error);
+                          Swal.showValidationMessage('Có lỗi xảy ra khi xử lý form');
+                          return false;
+                        }
+                      }
+                    }).then((result) => {
+                      if (result.isConfirmed) {
+                        Swal.fire('Thành công', 'Đã thêm trạm mới', 'success');
+                      }
+                    });
+                  }}
+                  className="px-3 py-1 rounded bg-[#00b894] text-white hover:bg-[#009e7d]"
+                >
+                  Thêm trạm
+                </button>
+                <button 
+                  onClick={() => loadStations()} 
+                  className="px-3 py-1 rounded bg-[#00b894] text-white hover:bg-[#009e7d]"
+                >
+                  Tải lại
+                </button>
+              </div>
+            </div>
+
+            {loading && <div className="text-gray-600">Đang tải...</div>}
+            {error && <div className="text-red-600 mb-3">{error}</div>}
+
+            {!loading && !error && (
+              <div className="overflow-x-auto">
+                <table className="min-w-full text-left border-collapse">
+                  <thead className="sticky top-0">
+                    <tr className="bg-gray-100 text-gray-700">
+                      <th className="p-3">Trạm</th>
+                      <th className="p-3">Địa chỉ</th>
+                      <th className="p-3">Sức chứa</th>
+                      <th className="p-3">Hiện có</th>
+                      <th className="p-3">Vị trí đổi pin</th>
+                      <th className="p-3">Vị trí trống</th>
+                      <th className="p-3">Trạng thái</th>
+                      <th className="p-3">Thời gian HĐ</th>
+                      <th className="p-3">Liên hệ</th>
+                      <th className="p-3">Thao tác</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {stations
+                      .filter(station => selectedStationStatus === 'ALL' || station.status === selectedStationStatus)
+                      .map((station, idx) => (
+                      <tr key={station.stationId} className={"border-t " + (idx % 2 === 0 ? 'bg-white' : 'bg-gray-50')}>
+                        <td className="p-3">
+                          <div className="flex items-center gap-3">
+                            <img 
+                              src={station.imageUrl || '/placeholder.png'} 
+                              alt={station.name} 
+                              className="w-10 h-10 rounded object-cover"
+                            />
+                            <div>
+                              <div className="font-medium">{station.name}</div>
+                              <div className="text-xs text-gray-500">{station.description}</div>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="p-3">{station.address}</td>
+                        <td className="p-3">{station.totalCapacity}</td>
+                        <td className="p-3">{station.currentCapacity}</td>
+                        <td className="p-3">{station.totalSwapBays}</td>
+                        <td className="p-3">{station.idleSwapBays}</td>
+                        <td className="p-3">
+                          <select
+                            value={station.status}
+                            onChange={(e) => {
+                              const newStatus = e.target.value;
+                              const stationId = station?.id || station?.stationId;
+                              console.log('Station object when changing status:', station);
+                              if (!stationId) {
+                                console.error('Station ID is missing:', station);
+                                Swal.fire('Lỗi', 'Không tìm thấy ID của trạm. Vui lòng tải lại trang.', 'error');
+                                return;
+                              }
+                              Swal.fire({
+                                title: 'Xác nhận thay đổi',
+                                text: `Bạn có chắc muốn thay đổi trạng thái trạm thành ${newStatus}?`,
+                                icon: 'warning',
+                                showCancelButton: true,
+                                confirmButtonText: 'Xác nhận',
+                                cancelButtonText: 'Hủy'
+                              }).then((result) => {
+                                if (result.isConfirmed) {
+                                  console.log('Updating status for station:', stationId, newStatus);
+                                  changeStationStatus(stationId, newStatus)
+                                    .then(() => {
+                                      loadStations();
+                                      Swal.fire('Thành công', 'Đã cập nhật trạng thái trạm', 'success');
+                                    })
+                                    .catch(error => {
+                                      console.error('Failed to update station status:', error);
+                                      const errorMsg = error?.response?.data?.message || error?.message || 'Có lỗi xảy ra';
+                                      console.error('Error details:', errorMsg);
+                                      Swal.fire('Lỗi', errorMsg, 'error');
+                                    });
+                                }
+                              });
+                            }}
+                            className={`px-2 py-1 rounded text-xs font-semibold ${
+                              station.status === 'OPERATIONAL' ? 'bg-green-100 text-green-700' : 
+                              station.status === 'MAINTENANCE' ? 'bg-yellow-100 text-yellow-700' : 
+                              station.status === 'CLOSED' ? 'bg-red-100 text-red-700' :
+                              'bg-gray-100 text-gray-700'
+                            }`}
+                          >
+                            <option value="OPERATIONAL">OPERATIONAL</option>
+                            <option value="MAINTENANCE">MAINTENANCE</option>
+                            <option value="CLOSED">CLOSED</option>
+                          </select>
+                        </td>
+                        <td className="p-3">
+                          {station.openingTime} - {station.closingTime}
+                        </td>
+                        <td className="p-3">
+                          <div>{station.contactPhone}</div>
+                          <div className="text-xs text-gray-500">{station.contactEmail}</div>
+                        </td>
+                        <td className="p-3">
+                          <button
+                            onClick={() => {
+                              const stationId = station?.stationId || station?.id;
+                              if (!stationId) {
+                                console.error('Station ID is missing:', station);
+                                Swal.fire('Lỗi', 'Không tìm thấy ID của trạm. Vui lòng tải lại trang.', 'error');
+                                return;
+                              }
+
+                              Swal.fire({
+                                title: 'Chỉnh sửa trạm',
+                                html: `
+                                  <div class="space-y-3">
+                                    <input id="name" class="w-full px-3 py-2 border rounded" placeholder="Tên trạm" value="${station.name || ''}" />
+                                    <input id="address" class="w-full px-3 py-2 border rounded" placeholder="Địa chỉ" value="${station.address || ''}" />
+                                    <input id="totalCapacity" type="number" class="w-full px-3 py-2 border rounded" placeholder="Sức chứa pin" value="${station.totalCapacity || ''}" />
+                                    <input id="totalSwapBays" type="number" class="w-full px-3 py-2 border rounded" placeholder="Số vị trí đổi pin" value="${station.totalSwapBays || ''}" />
+                                    <input id="openingTime" class="w-full px-3 py-2 border rounded" placeholder="Giờ mở cửa (HH:mm)" value="${station.openingTime || ''}" />
+                                    <input id="closingTime" class="w-full px-3 py-2 border rounded" placeholder="Giờ đóng cửa (HH:mm)" value="${station.closingTime || ''}" />
+                                    <input id="contactPhone" class="w-full px-3 py-2 border rounded" placeholder="Số điện thoại liên hệ" value="${station.contactPhone || ''}" />
+                                    <input id="contactEmail" class="w-full px-3 py-2 border rounded" placeholder="Email liên hệ" value="${station.contactEmail || ''}" />
+                                    <textarea id="description" class="w-full px-3 py-2 border rounded" placeholder="Mô tả">${station.description || ''}</textarea>
+                                    <input id="imageUrl" class="w-full px-3 py-2 border rounded" placeholder="URL hình ảnh" value="${station.imageUrl || ''}" />
+                                  </div>
+                                `,
+                                showCancelButton: true,
+                                confirmButtonText: 'Lưu',
+                                cancelButtonText: 'Hủy',
+                                preConfirm: () => {
+                                  try {
+                                    const data = {
+                                      name: document.getElementById('name').value.trim(),
+                                      address: document.getElementById('address').value.trim(),
+                                      totalCapacity: parseInt(document.getElementById('totalCapacity').value),
+                                      totalSwapBays: parseInt(document.getElementById('totalSwapBays').value),
+                                      openingTime: document.getElementById('openingTime').value.trim(),
+                                      closingTime: document.getElementById('closingTime').value.trim(),
+                                      contactPhone: document.getElementById('contactPhone').value.trim(),
+                                      contactEmail: document.getElementById('contactEmail').value.trim(),
+                                      description: document.getElementById('description').value.trim(),
+                                      imageUrl: document.getElementById('imageUrl').value.trim()
+                                    };
+    
+                                    if (!data.name || !data.address || !data.totalCapacity || !data.totalSwapBays || 
+                                        !data.openingTime || !data.closingTime || !data.contactPhone || 
+                                        !data.contactEmail || !data.description || !data.imageUrl) {
+                                      Swal.showValidationMessage('Vui lòng điền đầy đủ thông tin');
+                                      return false;
+                                    }
+    
+                                    // Validate numeric fields
+                                    if (data.totalCapacity <= 0 || data.totalSwapBays <= 0) {
+                                      Swal.showValidationMessage('Sức chứa và số vị trí đổi pin phải lớn hơn 0');
+                                      return false;
+                                    }
+    
+                                    // Validate email format
+                                    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                                    if (!emailRegex.test(data.contactEmail)) {
+                                      Swal.showValidationMessage('Email liên hệ không hợp lệ');
+                                      return false;
+                                    }
+    
+                                    // Validate phone format (allow +84 or 0 prefix)
+                                    const phoneRegex = /^(\+84|0)\d{9,10}$/;
+                                    if (!phoneRegex.test(data.contactPhone)) {
+                                      Swal.showValidationMessage('Số điện thoại không hợp lệ (phải bắt đầu bằng +84 hoặc 0)');
+                                      return false;
+                                    }
+
+                                  if (!stationId) {
+                                    console.error('Station object:', station);
+                                    Swal.showValidationMessage('Không tìm thấy ID của trạm');
+                                    return false;
+                                  }
+
+                                  console.log('Updating station:', stationId, data);
+                                  return updateStation(stationId, data)
+                                    .then(() => {
+                                      loadStations();
+                                      return true;
+                                    })
+                                    .catch(error => {
+                                      console.error('Failed to update station:', error);
+                                      const errorMessage = error?.response?.data?.message || error?.message || 'Có lỗi xảy ra khi cập nhật trạm';
+                                      console.log('Error message:', errorMessage);
+                                      Swal.showValidationMessage(errorMessage);
+                                      return false;
+                                    });
+                                  } catch (error) {
+                                    console.error('Error in form validation:', error);
+                                    Swal.showValidationMessage('Có lỗi xảy ra khi xử lý form');
+                                    return false;
+                                  }
+                                }
+                              }).then((result) => {
+                                if (result.isConfirmed) {
+                                  Swal.fire('Thành công', 'Đã cập nhật thông tin trạm', 'success');
+                                }
+                              });
+                            }}
+                            className="text-blue-600 hover:text-blue-800"
+                          >
+                            Sửa
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                    {stations.length === 0 && (
+                      <tr>
+                        <td colSpan={10} className="p-6 text-gray-500 text-center">
+                          Chưa có trạm nào.
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
             )}
           </div>
         )}
