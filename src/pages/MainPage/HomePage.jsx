@@ -81,7 +81,7 @@ const HomePage = () => {
             </button>
           )}
 
-          {hasRole("STATION_STAFF") && (
+          {hasRole("STAFF") && (
             <button
               onClick={() => navigate("/staff/dashboard")}
               className="bg-white shadow-lg rounded-xl p-6 hover:shadow-2xl transition"

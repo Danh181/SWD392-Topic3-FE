@@ -14,23 +14,87 @@ const ProfileUser = () => {
   const [profile, setProfile] = useState(user || null);
   const [active, setActive] = useState('profile');
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
+    // Check if user is logged in first
+    const token = localStorage.getItem('accessToken');
+    if (!token) {
+      navigate('/login');
+      return;
+    }
+
     let mounted = true;
     setLoading(true);
+    setError(null);
+    
     getCurrentProfile()
       .then(p => {
         if (p && mounted) {
           setProfile(p);
-          try { setUser(p); localStorage.setItem('user', JSON.stringify(p)); } catch {}
+          try { 
+            setUser(p); 
+            localStorage.setItem('user', JSON.stringify(p)); 
+          } catch (err) {
+            console.error('Error saving user data:', err);
+          }
         }
       })
-      .catch(() => {})
+      .catch(err => {
+        console.error('Error fetching profile:', err);
+        if (mounted) {
+          setError(err.message || 'Không thể tải thông tin người dùng');
+          // If unauthorized, redirect to login
+          if (err.response?.status === 401) {
+            navigate('/login');
+          }
+        }
+      })
       .finally(() => mounted && setLoading(false));
     return () => { mounted = false; };
   }, []);
 
-  if (loading) return <div className="p-8">Đang tải thông tin...</div>;
+  if (loading) return (
+    <div className="min-h-screen bg-gray-50 pt-24 flex justify-center">
+      <div className="p-8">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#0028b8] mx-auto mb-4"></div>
+        <p className="text-gray-600">Đang tải thông tin...</p>
+      </div>
+    </div>
+  );
+
+  if (error) return (
+    <div className="min-h-screen bg-gray-50 pt-24 flex justify-center">
+      <div className="p-8 text-center">
+        <div className="text-red-500 mb-4">
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+          </svg>
+        </div>
+        <p className="text-gray-600">{error}</p>
+        <button 
+          onClick={() => navigate('/login')} 
+          className="mt-4 px-4 py-2 bg-[#0028b8] text-white rounded-md hover:bg-[#001a8b] transition-colors"
+        >
+          Quay lại đăng nhập
+        </button>
+      </div>
+    </div>
+  );
+
+  if (!profile) return (
+    <div className="min-h-screen bg-gray-50 pt-24 flex justify-center">
+      <div className="p-8 text-center">
+        <p className="text-gray-600">Không tìm thấy thông tin người dùng</p>
+        <button 
+          onClick={() => navigate('/login')} 
+          className="mt-4 px-4 py-2 bg-[#0028b8] text-white rounded-md hover:bg-[#001a8b] transition-colors"
+        >
+          Quay lại đăng nhập
+        </button>
+      </div>
+    </div>
+  );
 
   const firstName = profile?.firstName || '';
   const lastName = profile?.lastName || '';
@@ -79,7 +143,7 @@ const ProfileUser = () => {
         isOpen={sidebarOpen}
         onToggle={() => setSidebarOpen(v => !v)}
         items={
-          hasRole("ADMIN") || hasRole("STATION_STAFF")
+          hasRole("ADMIN") || hasRole("STAFF")
             ? [
                 { key: "profile", label: "Thông tin cá nhân" },
                 //{ key: "vehicles", label: "Phương tiện" }
@@ -150,7 +214,7 @@ const ProfileUser = () => {
                       </button>
                     )}
   
-                    {hasRole("STATION_STAFF") && (
+                    {hasRole("STAFF") && (
                       <button
                         onClick={() => navigate("/staff/dashboard")}
                         className="px-4 py-2 bg-green-600 text-white rounded-md text-sm hover:bg-green-700 transition-colors"

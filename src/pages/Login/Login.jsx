@@ -65,7 +65,7 @@ const Login = () => {
             // Redirect based on role
             if (userRole === 'ADMIN') {
               navigate('/dashboard/admin');
-            } else if (userRole === 'STATION_STAFF') {
+            } else if (userRole === 'STAFF') {
               navigate('/staff/dashboard');
             } else {
               navigate('/mainpage/HomePage');

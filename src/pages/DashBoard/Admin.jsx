@@ -27,8 +27,9 @@ const Admin = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [selectedRole, setSelectedRole] = useState('ALL');
-  const [selectedStationStatus, setSelectedStationStatus] = useState('ALL'); // ALL | ADMIN | CUSTOMER | STATION_STAFF
+  const [selectedStationStatus, setSelectedStationStatus] = useState('ALL'); // ALL | ADMIN | CUSTOMER | STAFF
   const [userCount, setUserCount] = useState(0);
+  const [operationalStationCount, setOperationalStationCount] = useState(0);
   const [searchQuery, setSearchQuery] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
@@ -77,6 +78,8 @@ const Admin = () => {
       setError('');
       const data = await getAllStations();
       setStations(data);
+      const operationalCount = data.filter(station => station.status === 'OPERATIONAL').length;
+      setOperationalStationCount(operationalCount);
     } catch (e) {
       setError(e?.message || 'Không thể tải danh sách trạm');
       console.error('Failed to load stations:', e);
@@ -85,15 +88,17 @@ const Admin = () => {
     }
   };
 
-  // Load user count on initial mount
+  // Load initial data
   useEffect(() => {
     loadUserCount();
+    loadStations();
   }, []);
 
-  // Ensure count refreshes when switching back to overview
+  // Ensure counts refresh when switching back to overview
   useEffect(() => {
     if (activeView === 'overview') {
       loadUserCount();
+      loadStations();
     }
   }, [activeView]);
 
@@ -142,6 +147,23 @@ const Admin = () => {
                 className="flex items-center gap-3 p-2 rounded hover:bg-[#009e7d] w-full text-left"
               >
                 <Battery /> {isSidebarOpen && "Quản lý trạm"}
+              </button>
+            </li>
+            <li>
+              <button
+                onClick={() => navigate('/dashboard/admin/staff')}
+                className="flex items-center gap-3 p-2 rounded bg-[#009e7d]/20 hover:bg-[#009e7d] w-full text-left relative group"
+              >
+                <div className="absolute inset-y-0 -left-1 w-1 bg-white transform scale-y-0 group-hover:scale-y-100 transition-transform"></div>
+                <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                </svg>
+                {isSidebarOpen && (
+                  <span className="flex items-center gap-2">
+                    Quản lý nhân viên
+                    <span className="text-xs bg-white/20 px-1.5 py-0.5 rounded">New</span>
+                  </span>
+                )}
               </button>
             </li>
             <li>
@@ -219,7 +241,7 @@ const Admin = () => {
               </div>
               <div className="bg-white p-6 rounded-xl shadow">
                 <h3 className="text-lg font-semibold">Trạm hoạt động</h3>
-                <p className="text-3xl font-bold text-[#00b894]">32</p>
+                <p className="text-3xl font-bold text-[#00b894]">{operationalStationCount}</p>
               </div>
               <div className="bg-white p-6 rounded-xl shadow">
                 <h3 className="text-lg font-semibold">Giao dịch hôm nay</h3>

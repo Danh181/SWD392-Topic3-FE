@@ -1,0 +1,86 @@
+import API from './auth';
+
+// Helper function to get user details
+async function enrichStaffWithUserDetails(staffList) {
+  const enrichedStaff = await Promise.all(
+    staffList.map(async (staff) => {
+      try {
+        // Get user details using staffId
+        const userRes = await API.get(`/api/users/${staff.staffId}`);
+        const userData = userRes?.data?.data;
+        
+        return {
+          ...staff,
+          firstName: userData?.firstName || '',
+          lastName: userData?.lastName || '',
+          email: userData?.email || ''
+        };
+      } catch (error) {
+        console.error('Error fetching user details:', error);
+        return staff;
+      }
+    })
+  );
+  return enrichedStaff;
+}
+
+export async function getAllStaff() {
+  const res = await API.get('/api/station-staff/all');
+  const staffList = res?.data?.data ?? [];
+  return enrichStaffWithUserDetails(staffList);
+}
+
+export async function getStationStaff(stationId) {
+  if (!stationId) {
+    throw new Error('Station ID is required');
+  }
+  
+  try {
+    const res = await API.get(`/api/station-staff/station/${stationId}/staff`);
+    return res?.data?.data ?? [];
+  } catch (error) {
+    console.error('Error fetching station staff:', error);
+    // If station staff API fails, try to get all staff as fallback
+    if (error?.response?.status === 403 || error?.response?.status === 401) {
+      console.log('Access denied for station staff, trying to get all staff...');
+      const res = await API.get('/api/station-staff/all');
+      return res?.data?.data ?? [];
+    }
+    throw error;
+  }
+}
+
+export async function createStaff(data) {
+  // Gửi status qua URL parameter và body qua request body
+  const params = new URLSearchParams({ status: data.status });
+  const requestData = {
+    staffEmail: data.staffEmail,
+    stationName: data.stationName,
+    salary: data.salary
+  };
+  const res = await API.post(`/api/station-staff/create?${params}`, requestData);
+  return res?.data?.data;
+}
+
+export async function updateStaffStatus(staffId, data) {
+  // Controller expects status as URL parameter (required) and salary in request body
+  const params = new URLSearchParams();
+  
+  // Always include status parameter - use existing status or default to FULL_TIME
+  const status = data.status || 'FULL_TIME';
+  params.append('status', status);
+  
+  // Only send salary in request body (as per Swagger spec)
+  const requestBody = {
+    salary: data.salary
+  };
+  
+  const url = `/api/station-staff/update/${staffId}?${params.toString()}`;
+  const res = await API.put(url, requestBody);
+  return res?.data?.data;
+}
+
+export async function deleteStaff(staffId) {
+  const res = await API.delete(`/api/station-staff/delete/${staffId}`);
+  return res?.data?.data;
+}
