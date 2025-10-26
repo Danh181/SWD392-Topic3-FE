@@ -2,7 +2,7 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import Swal from 'sweetalert2';
 import { useAuth } from '../context/AuthContext';
-import { logout as apiLogout, default as API } from '../services/auth';
+import API, { logout as apiLogout } from '../services/auth';
 import { resolveAssetUrl } from '../services/user';
 
 const Header = () => {

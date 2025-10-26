@@ -7,6 +7,7 @@ import ProfileUser from './pages/Profile/pages/ProfileUser';
 import EditProfile from './pages/Profile/pages/EditProfile';
 import StaffDashboard from './pages/Staff/StaffDashboard';
 import Stations from './pages/Stations/Stations';
+import StationDetail from './pages/Stations/StationDetail';
 import StaffManagement from './pages/DashBoard/Staff/StaffManagement';
 import StaffManagementForStaff from './pages/Staff/StaffManagement/StaffManagement';
 
@@ -21,6 +22,7 @@ function App() {
         <Route path="/dashboard/admin" element={<Admin />} />
         <Route path="/staff/dashboard" element={<StaffDashboard />} />
         <Route path="/stations" element={<Stations />} />
+        <Route path="/dashboard/admin/station/:id" element={<StationDetail />} />
         <Route path="/dashboard/admin/staff" element={<StaffManagement />} />
         <Route path="/staff/manage-staff" element={<StaffManagementForStaff />} />
 

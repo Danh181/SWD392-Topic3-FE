@@ -10,7 +10,7 @@ import {
   Menu,
 } from "lucide-react"; // icon đẹp (npm install lucide-react)
 import { useAuth } from '../../context/AuthContext';
-import { logout as apiLogout, clearTokens, default as API } from '../../services/auth';
+import API, { logout as apiLogout, clearTokens } from '../../services/auth';
 import { getUsers, getUsersByRole } from '../../services/admin';
 import { resolveAssetUrl } from '../../services/user';
 import { getAllStations, createStation, updateStation, changeStationStatus } from '../../services/station';
@@ -462,8 +462,8 @@ const Admin = () => {
                           const data = {
                             name: document.getElementById('name').value.trim(),
                             address: document.getElementById('address').value.trim(),
-                            totalCapacity: parseInt(document.getElementById('totalCapacity').value),
-                            totalSwapBays: parseInt(document.getElementById('totalSwapBays').value),
+                            totalCapacity: Number.parseInt(document.getElementById('totalCapacity').value, 10),
+                            totalSwapBays: Number.parseInt(document.getElementById('totalSwapBays').value, 10),
                             openingTime: document.getElementById('openingTime').value.trim(),
                             closingTime: document.getElementById('closingTime').value.trim(),
                             contactPhone: document.getElementById('contactPhone').value.trim(),
@@ -644,111 +644,120 @@ const Admin = () => {
                           <div className="text-xs text-gray-500">{station.contactEmail}</div>
                         </td>
                         <td className="p-3">
-                          <button
-                            onClick={() => {
-                              const stationId = station?.stationId || station?.id;
-                              if (!stationId) {
-                                console.error('Station ID is missing:', station);
-                                Swal.fire('Lỗi', 'Không tìm thấy ID của trạm. Vui lòng tải lại trang.', 'error');
-                                return;
-                              }
-
-                              Swal.fire({
-                                title: 'Chỉnh sửa trạm',
-                                html: `
-                                  <div class="space-y-3">
-                                    <input id="name" class="w-full px-3 py-2 border rounded" placeholder="Tên trạm" value="${station.name || ''}" />
-                                    <input id="address" class="w-full px-3 py-2 border rounded" placeholder="Địa chỉ" value="${station.address || ''}" />
-                                    <input id="totalCapacity" type="number" class="w-full px-3 py-2 border rounded" placeholder="Sức chứa pin" value="${station.totalCapacity || ''}" />
-                                    <input id="totalSwapBays" type="number" class="w-full px-3 py-2 border rounded" placeholder="Số vị trí đổi pin" value="${station.totalSwapBays || ''}" />
-                                    <input id="openingTime" class="w-full px-3 py-2 border rounded" placeholder="Giờ mở cửa (HH:mm)" value="${station.openingTime || ''}" />
-                                    <input id="closingTime" class="w-full px-3 py-2 border rounded" placeholder="Giờ đóng cửa (HH:mm)" value="${station.closingTime || ''}" />
-                                    <input id="contactPhone" class="w-full px-3 py-2 border rounded" placeholder="Số điện thoại liên hệ" value="${station.contactPhone || ''}" />
-                                    <input id="contactEmail" class="w-full px-3 py-2 border rounded" placeholder="Email liên hệ" value="${station.contactEmail || ''}" />
-                                    <textarea id="description" class="w-full px-3 py-2 border rounded" placeholder="Mô tả">${station.description || ''}</textarea>
-                                    <input id="imageUrl" class="w-full px-3 py-2 border rounded" placeholder="URL hình ảnh" value="${station.imageUrl || ''}" />
-                                  </div>
-                                `,
-                                showCancelButton: true,
-                                confirmButtonText: 'Lưu',
-                                cancelButtonText: 'Hủy',
-                                preConfirm: () => {
-                                  try {
-                                    const data = {
-                                      name: document.getElementById('name').value.trim(),
-                                      address: document.getElementById('address').value.trim(),
-                                      totalCapacity: parseInt(document.getElementById('totalCapacity').value),
-                                      totalSwapBays: parseInt(document.getElementById('totalSwapBays').value),
-                                      openingTime: document.getElementById('openingTime').value.trim(),
-                                      closingTime: document.getElementById('closingTime').value.trim(),
-                                      contactPhone: document.getElementById('contactPhone').value.trim(),
-                                      contactEmail: document.getElementById('contactEmail').value.trim(),
-                                      description: document.getElementById('description').value.trim(),
-                                      imageUrl: document.getElementById('imageUrl').value.trim()
-                                    };
-    
-                                    if (!data.name || !data.address || !data.totalCapacity || !data.totalSwapBays || 
-                                        !data.openingTime || !data.closingTime || !data.contactPhone || 
-                                        !data.contactEmail || !data.description || !data.imageUrl) {
-                                      Swal.showValidationMessage('Vui lòng điền đầy đủ thông tin');
-                                      return false;
-                                    }
-    
-                                    // Validate numeric fields
-                                    if (data.totalCapacity <= 0 || data.totalSwapBays <= 0) {
-                                      Swal.showValidationMessage('Sức chứa và số vị trí đổi pin phải lớn hơn 0');
-                                      return false;
-                                    }
-    
-                                    // Validate email format
-                                    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-                                    if (!emailRegex.test(data.contactEmail)) {
-                                      Swal.showValidationMessage('Email liên hệ không hợp lệ');
-                                      return false;
-                                    }
-    
-                                    // Validate phone format (allow +84 or 0 prefix)
-                                    const phoneRegex = /^(\+84|0)\d{9,10}$/;
-                                    if (!phoneRegex.test(data.contactPhone)) {
-                                      Swal.showValidationMessage('Số điện thoại không hợp lệ (phải bắt đầu bằng +84 hoặc 0)');
-                                      return false;
-                                    }
-
-                                  if (!stationId) {
-                                    console.error('Station object:', station);
-                                    Swal.showValidationMessage('Không tìm thấy ID của trạm');
-                                    return false;
-                                  }
-
-                                  console.log('Updating station:', stationId, data);
-                                  return updateStation(stationId, data)
-                                    .then(() => {
-                                      loadStations();
-                                      return true;
-                                    })
-                                    .catch(error => {
-                                      console.error('Failed to update station:', error);
-                                      const errorMessage = error?.response?.data?.message || error?.message || 'Có lỗi xảy ra khi cập nhật trạm';
-                                      console.log('Error message:', errorMessage);
-                                      Swal.showValidationMessage(errorMessage);
-                                      return false;
-                                    });
-                                  } catch (error) {
-                                    console.error('Error in form validation:', error);
-                                    Swal.showValidationMessage('Có lỗi xảy ra khi xử lý form');
-                                    return false;
-                                  }
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={() => navigate(`/dashboard/admin/station/${station.id || station.stationId}`)}
+                              className="text-[#155dfc] hover:text-[#193cb8] font-medium"
+                            >
+                              Xem chi tiết
+                            </button>
+                            <span className="text-gray-300">|</span>
+                            <button
+                              onClick={() => {
+                                const stationId = station?.stationId || station?.id;
+                                if (!stationId) {
+                                  console.error('Station ID is missing:', station);
+                                  Swal.fire('Lỗi', 'Không tìm thấy ID của trạm. Vui lòng tải lại trang.', 'error');
+                                  return;
                                 }
-                              }).then((result) => {
-                                if (result.isConfirmed) {
-                                  Swal.fire('Thành công', 'Đã cập nhật thông tin trạm', 'success');
-                                }
-                              });
-                            }}
-                            className="text-blue-600 hover:text-blue-800"
-                          >
-                            Sửa
-                          </button>
+
+                                Swal.fire({
+                                  title: 'Chỉnh sửa trạm',
+                                  html: `
+                                    <div class="space-y-3">
+                                      <input id="name" class="w-full px-3 py-2 border rounded" placeholder="Tên trạm" value="${station.name || ''}" />
+                                      <input id="address" class="w-full px-3 py-2 border rounded" placeholder="Địa chỉ" value="${station.address || ''}" />
+                                      <input id="totalCapacity" type="number" class="w-full px-3 py-2 border rounded" placeholder="Sức chứa pin" value="${station.totalCapacity || ''}" />
+                                      <input id="totalSwapBays" type="number" class="w-full px-3 py-2 border rounded" placeholder="Số vị trí đổi pin" value="${station.totalSwapBays || ''}" />
+                                      <input id="openingTime" class="w-full px-3 py-2 border rounded" placeholder="Giờ mở cửa (HH:mm)" value="${station.openingTime || ''}" />
+                                      <input id="closingTime" class="w-full px-3 py-2 border rounded" placeholder="Giờ đóng cửa (HH:mm)" value="${station.closingTime || ''}" />
+                                      <input id="contactPhone" class="w-full px-3 py-2 border rounded" placeholder="Số điện thoại liên hệ" value="${station.contactPhone || ''}" />
+                                      <input id="contactEmail" class="w-full px-3 py-2 border rounded" placeholder="Email liên hệ" value="${station.contactEmail || ''}" />
+                                      <textarea id="description" class="w-full px-3 py-2 border rounded" placeholder="Mô tả">${station.description || ''}</textarea>
+                                      <input id="imageUrl" class="w-full px-3 py-2 border rounded" placeholder="URL hình ảnh" value="${station.imageUrl || ''}" />
+                                    </div>
+                                  `,
+                                  showCancelButton: true,
+                                  confirmButtonText: 'Lưu',
+                                  cancelButtonText: 'Hủy',
+                                  preConfirm: () => {
+                                    try {
+                                      const data = {
+                                        name: document.getElementById('name').value.trim(),
+                                        address: document.getElementById('address').value.trim(),
+                                        totalCapacity: Number.parseInt(document.getElementById('totalCapacity').value, 10),
+                                        totalSwapBays: Number.parseInt(document.getElementById('totalSwapBays').value, 10),
+                                        openingTime: document.getElementById('openingTime').value.trim(),
+                                        closingTime: document.getElementById('closingTime').value.trim(),
+                                        contactPhone: document.getElementById('contactPhone').value.trim(),
+                                        contactEmail: document.getElementById('contactEmail').value.trim(),
+                                        description: document.getElementById('description').value.trim(),
+                                        imageUrl: document.getElementById('imageUrl').value.trim()
+                                      };
+      
+                                      if (!data.name || !data.address || !data.totalCapacity || !data.totalSwapBays || 
+                                          !data.openingTime || !data.closingTime || !data.contactPhone || 
+                                          !data.contactEmail || !data.description || !data.imageUrl) {
+                                        Swal.showValidationMessage('Vui lòng điền đầy đủ thông tin');
+                                        return false;
+                                      }
+      
+                                      // Validate numeric fields
+                                      if (data.totalCapacity <= 0 || data.totalSwapBays <= 0) {
+                                        Swal.showValidationMessage('Sức chứa và số vị trí đổi pin phải lớn hơn 0');
+                                        return false;
+                                      }
+      
+                                      // Validate email format
+                                      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                                      if (!emailRegex.test(data.contactEmail)) {
+                                        Swal.showValidationMessage('Email liên hệ không hợp lệ');
+                                        return false;
+                                      }
+      
+                                      // Validate phone format (allow +84 or 0 prefix)
+                                      const phoneRegex = /^(\+84|0)\d{9,10}$/;
+                                      if (!phoneRegex.test(data.contactPhone)) {
+                                        Swal.showValidationMessage('Số điện thoại không hợp lệ (phải bắt đầu bằng +84 hoặc 0)');
+                                        return false;
+                                      }
+
+                                    if (!stationId) {
+                                      console.error('Station object:', station);
+                                      Swal.showValidationMessage('Không tìm thấy ID của trạm');
+                                      return false;
+                                    }
+
+                                    console.log('Updating station:', stationId, data);
+                                    return updateStation(stationId, data)
+                                      .then(() => {
+                                        loadStations();
+                                        return true;
+                                      })
+                                      .catch(error => {
+                                        console.error('Failed to update station:', error);
+                                        const errorMessage = error?.response?.data?.message || error?.message || 'Có lỗi xảy ra khi cập nhật trạm';
+                                        console.log('Error message:', errorMessage);
+                                        Swal.showValidationMessage(errorMessage);
+                                        return false;
+                                      });
+                                    } catch (error) {
+                                      console.error('Error in form validation:', error);
+                                      Swal.showValidationMessage('Có lỗi xảy ra khi xử lý form');
+                                      return false;
+                                    }
+                                  }
+                                }).then((result) => {
+                                  if (result.isConfirmed) {
+                                    Swal.fire('Thành công', 'Đã cập nhật thông tin trạm', 'success');
+                                  }
+                                });
+                              }}
+                              className="text-blue-600 hover:text-blue-800 font-medium"
+                            >
+                              Sửa
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     ))}

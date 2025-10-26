@@ -1,3 +1,4 @@
+/* eslint-disable jsx-a11y/label-has-associated-control */
 import { useEffect, useState } from 'react';
 import { getAllStaff, createStaff, updateStaffStatus, deleteStaff } from '../../../services/stationStaff';
 import { getAllStations } from '../../../services/station';
@@ -10,6 +11,9 @@ export default function StaffManagement() {
   const [stations, setStations] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  // Filters
+  const [nameQuery, setNameQuery] = useState('');
+  const [stationFilter, setStationFilter] = useState('ALL');
   
   // Form state
   const [showForm, setShowForm] = useState(false);
@@ -58,6 +62,14 @@ export default function StaffManagement() {
     loadData();
   }, []);
 
+  // Derived filtered list
+  const filteredStaff = staff.filter((s) => {
+    const matchesStation = stationFilter === 'ALL' || s.stationName === stationFilter;
+    const q = nameQuery.trim().toLowerCase();
+    const matchesName = !q || (String(s.firstName || '').toLowerCase().includes(q) || String(s.lastName || '').toLowerCase().includes(q));
+    return matchesStation && matchesName;
+  });
+
   // Handle form submission
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -97,7 +109,7 @@ export default function StaffManagement() {
 
   // Handle staff deletion
   const handleDelete = async (staffId) => {
-    if (!window.confirm('Bạn có chắc muốn xóa nhân viên này?')) return;
+    if (!globalThis.confirm('Bạn có chắc muốn xóa nhân viên này?')) return;
     
     try {
       setLoading(true);
@@ -111,19 +123,7 @@ export default function StaffManagement() {
     }
   };
 
-  // Handle status update
-  const handleStatusUpdate = async (staffId, salary) => {
-    try {
-      setLoading(true);
-      setError('');
-      await updateStaffStatus(staffId, { salary });
-      await loadData(); // Reload data
-    } catch (e) {
-      setError(e?.response?.data?.message || e?.message || 'Không thể cập nhật trạng thái');
-    } finally {
-      setLoading(false);
-    }
-  };
+  // (Deprecated) handleStatusUpdate removed - updates are done via update form
 
   // Handle opening update form
   const handleOpenUpdateForm = (staff) => {
@@ -175,13 +175,50 @@ export default function StaffManagement() {
         </div>
         <button
           onClick={() => setShowForm(true)}
-          className="px-4 py-2 bg-[#00b894] text-white rounded-md shadow hover:bg-[#009e7d]"
+          className="px-4 py-2 bg-[#0028b8] text-white rounded-md shadow hover:bg-[#335cff]"
         >
           Thêm nhân viên
         </button>
       </div>
 
       {error && <div className="text-red-600 mb-4 p-3 bg-red-50 rounded">{error}</div>}
+
+      {/* Filters */}
+      <div className="bg-white p-3 rounded-md shadow mb-4">
+        <div className="flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between">
+          <div className="flex items-center bg-white border rounded-md shadow-sm px-3 py-2 w-full sm:w-auto">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-400 mr-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-4.35-4.35" />
+              <circle cx="11" cy="11" r="6" />
+            </svg>
+            <input
+              aria-label="Tìm theo tên nhân viên"
+              placeholder="Tìm theo họ hoặc tên nhân viên"
+              className="outline-none text-sm w-full sm:w-64"
+              value={nameQuery}
+              onChange={(e) => setNameQuery(e.target.value)}
+            />
+            {nameQuery && (
+              <button type="button" onClick={() => setNameQuery('')} className="ml-2 text-xs text-gray-500">Xóa</button>
+            )}
+          </div>
+
+          <div className="flex items-center gap-2">
+            <label htmlFor="station-filter" className="text-sm text-gray-600">Lọc theo trạm:</label>
+            <select
+              id="station-filter"
+              className="border rounded-md px-3 py-2 text-sm bg-white"
+              value={stationFilter}
+              onChange={(e) => setStationFilter(e.target.value)}
+            >
+              <option value="ALL">Tất cả trạm</option>
+              {stations.map((st) => (
+                <option key={st.id || st.stationId || st.name} value={st.name}>{st.name}</option>
+              ))}
+            </select>
+          </div>
+        </div>
+      </div>
 
       {/* Add Staff Form */}
       {showForm && (
@@ -208,7 +245,7 @@ export default function StaffManagement() {
                   required
                   value={formData.staffEmail}
                   onChange={(e) => setFormData({...formData, staffEmail: e.target.value})}
-                  className="w-full p-2 border rounded focus:ring-2 focus:ring-[#00b894] outline-none"
+                  className="w-full p-2 border rounded focus:ring-2 focus:ring-[#0028b8] outline-none"
                   placeholder="vit@gmail.com"
                 />
               </div>
@@ -223,7 +260,7 @@ export default function StaffManagement() {
                   minLength={8}
                   value={formData.password}
                   onChange={(e) => setFormData({...formData, password: e.target.value})}
-                  className="w-full p-2 border rounded focus:ring-2 focus:ring-[#00b894] outline-none"
+                  className="w-full p-2 border rounded focus:ring-2 focus:ring-[#0028b8] outline-none"
                   placeholder="Tối thiểu 8 ký tự"
                 />
               </div>
@@ -237,7 +274,7 @@ export default function StaffManagement() {
                   required
                   value={formData.confirmPassword}
                   onChange={(e) => setFormData({...formData, confirmPassword: e.target.value})}
-                  className="w-full p-2 border rounded focus:ring-2 focus:ring-[#00b894] outline-none"
+                  className="w-full p-2 border rounded focus:ring-2 focus:ring-[#0028b8] outline-none"
                   placeholder="Nhập lại mật khẩu"
                 />
               </div>
@@ -251,7 +288,7 @@ export default function StaffManagement() {
                   required
                   value={formData.firstName}
                   onChange={(e) => setFormData({...formData, firstName: e.target.value})}
-                  className="w-full p-2 border rounded focus:ring-2 focus:ring-[#00b894] outline-none"
+                  className="w-full p-2 border rounded focus:ring-2 focus:ring-[#0028b8] outline-none"
                   placeholder="Nguyễn Văn"
                 />
               </div>
@@ -265,7 +302,7 @@ export default function StaffManagement() {
                   required
                   value={formData.lastName}
                   onChange={(e) => setFormData({...formData, lastName: e.target.value})}
-                  className="w-full p-2 border rounded focus:ring-2 focus:ring-[#00b894] outline-none"
+                  className="w-full p-2 border rounded focus:ring-2 focus:ring-[#0028b8] outline-none"
                   placeholder="A"
                 />
               </div>
@@ -279,7 +316,7 @@ export default function StaffManagement() {
                   required
                   value={formData.dateOfBirth}
                   onChange={(e) => setFormData({...formData, dateOfBirth: e.target.value})}
-                  className="w-full p-2 border rounded focus:ring-2 focus:ring-[#00b894] outline-none"
+                  className="w-full p-2 border rounded focus:ring-2 focus:ring-[#0028b8] outline-none"
                 />
               </div>
 
@@ -291,7 +328,7 @@ export default function StaffManagement() {
                   required
                   value={formData.gender}
                   onChange={(e) => setFormData({...formData, gender: e.target.value})}
-                  className="w-full p-2 border rounded focus:ring-2 focus:ring-[#00b894] outline-none"
+                  className="w-full p-2 border rounded focus:ring-2 focus:ring-[#0028b8] outline-none"
                 >
                   <option value="MALE">Nam</option>
                   <option value="FEMALE">Nữ</option>
@@ -306,7 +343,7 @@ export default function StaffManagement() {
                   type="tel"
                   value={formData.phone}
                   onChange={(e) => setFormData({...formData, phone: e.target.value})}
-                  className="w-full p-2 border rounded focus:ring-2 focus:ring-[#00b894] outline-none"
+                  className="w-full p-2 border rounded focus:ring-2 focus:ring-[#0028b8] outline-none"
                   placeholder="0123456789"
                 />
               </div>
@@ -319,7 +356,7 @@ export default function StaffManagement() {
                   type="text"
                   value={formData.identityNumber}
                   onChange={(e) => setFormData({...formData, identityNumber: e.target.value})}
-                  className="w-full p-2 border rounded focus:ring-2 focus:ring-[#00b894] outline-none"
+                  className="w-full p-2 border rounded focus:ring-2 focus:ring-[#0028b8] outline-none"
                   placeholder="Số CMND/CCCD"
                 />
               </div>
@@ -332,7 +369,7 @@ export default function StaffManagement() {
                   type="url"
                   value={formData.avatarUrl}
                   onChange={(e) => setFormData({...formData, avatarUrl: e.target.value})}
-                  className="w-full p-2 border rounded focus:ring-2 focus:ring-[#00b894] outline-none"
+                  className="w-full p-2 border rounded focus:ring-2 focus:ring-[#0028b8] outline-none"
                   placeholder="https://example.com/avatar.jpg"
                 />
               </div>
@@ -345,7 +382,7 @@ export default function StaffManagement() {
                   required
                   value={formData.stationName}
                   onChange={(e) => setFormData({...formData, stationName: e.target.value})}
-                  className="w-full p-2 border rounded focus:ring-2 focus:ring-[#00b894] outline-none"
+                  className="w-full p-2 border rounded focus:ring-2 focus:ring-[#0028b8] outline-none"
                 >
                   <option value="">Chọn trạm</option>
                   {stations.map(station => (
@@ -366,7 +403,7 @@ export default function StaffManagement() {
                   min="0"
                   value={formData.salary}
                   onChange={(e) => setFormData({...formData, salary: e.target.value})}
-                  className="w-full p-2 border rounded focus:ring-2 focus:ring-[#00b894] outline-none"
+                  className="w-full p-2 border rounded focus:ring-2 focus:ring-[#0028b8] outline-none"
                   placeholder="5000000"
                 />
               </div>
@@ -379,7 +416,7 @@ export default function StaffManagement() {
                   required
                   value={formData.status}
                   onChange={(e) => setFormData({...formData, status: e.target.value})}
-                  className="w-full p-2 border rounded focus:ring-2 focus:ring-[#00b894] outline-none"
+                  className="w-full p-2 border rounded focus:ring-2 focus:ring-[#0028b8] outline-none"
                 >
                   <option value="FULL_TIME">Toàn thời gian</option>
                   <option value="PART_TIME">Bán thời gian</option>
@@ -397,7 +434,7 @@ export default function StaffManagement() {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="px-4 py-2 bg-[#00b894] text-white rounded hover:bg-[#009e7d] disabled:opacity-50"
+                  className="px-4 py-2 bg-[#0028b8] text-white rounded hover:bg-[#335cff] disabled:opacity-50"
                 >
                   {loading ? 'Đang xử lý...' : 'Thêm'}
                 </button>
@@ -434,7 +471,7 @@ export default function StaffManagement() {
                   min="0"
                   value={updateData.salary}
                   onChange={(e) => setUpdateData({...updateData, salary: e.target.value})}
-                  className="w-full p-2 border rounded focus:ring-2 focus:ring-[#00b894] outline-none"
+                  className="w-full p-2 border rounded focus:ring-2 focus:ring-[#0028b8] outline-none"
                   placeholder="Mức lương"
                 />
               </div>
@@ -447,7 +484,7 @@ export default function StaffManagement() {
                   required
                   value={updateData.status}
                   onChange={(e) => setUpdateData({...updateData, status: e.target.value})}
-                  className="w-full p-2 border rounded focus:ring-2 focus:ring-[#00b894] outline-none"
+                  className="w-full p-2 border rounded focus:ring-2 focus:ring-[#0028b8] outline-none"
                 >
                   <option value="FULL_TIME">Toàn thời gian</option>
                   <option value="PART_TIME">Bán thời gian</option>
@@ -465,7 +502,7 @@ export default function StaffManagement() {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="px-4 py-2 bg-[#00b894] text-white rounded hover:bg-[#009e7d] disabled:opacity-50"
+                  className="px-4 py-2 bg-[#0028b8] text-white rounded hover:bg-[#335cff] disabled:opacity-50"
                 >
                   {loading ? 'Đang xử lý...' : 'Cập nhật'}
                 </button>
@@ -478,16 +515,16 @@ export default function StaffManagement() {
       {/* Staff List */}
       {loading && !showForm ? (
         <div className="flex items-center justify-center py-12">
-          <div className="w-10 h-10 border-4 border-gray-200 border-t-[#00b894] rounded-full animate-spin" />
+          <div className="w-10 h-10 border-4 border-gray-200 border-t-[#0028b8] rounded-full animate-spin" />
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {staff.length === 0 ? (
+          {filteredStaff.length === 0 ? (
             <div className="col-span-full text-center py-12 text-gray-500">
               Chưa có nhân viên nào.
             </div>
           ) : (
-            staff.map((s) => (
+            filteredStaff.map((s) => (
               <div key={s.staffId} className="bg-white rounded-lg shadow-md overflow-hidden">
                 <div className="p-4">
                   <div className="flex items-center justify-between mb-3">

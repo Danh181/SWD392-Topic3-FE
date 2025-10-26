@@ -1,7 +1,8 @@
+/* eslint-disable jsx-a11y/label-has-associated-control */
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getAllStaff, createStaff, updateStaffStatus, getStationStaff } from '../../../services/stationStaff';
-import { getAllStations } from '../../../services/station';
+ 
 import { useAuth } from '../../../context/AuthContext';
 
 const StaffManagementForStaff = () => {
@@ -9,9 +10,12 @@ const StaffManagementForStaff = () => {
   const navigate = useNavigate();
 
   const [staff, setStaff] = useState([]);
-  const [stations, setStations] = useState([]);
+ 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  // Filters
+  const [nameQuery, setNameQuery] = useState('');
+  const [stationFilter, setStationFilter] = useState('ALL');
   const [showForm, setShowForm] = useState(false);
   const [showUpdateForm, setShowUpdateForm] = useState(false);
   const [selectedStaff, setSelectedStaff] = useState(null);
@@ -36,18 +40,7 @@ const StaffManagementForStaff = () => {
   });
 
   // Handle status update
-  const handleStatusUpdate = async (staffId, salary, currentStatus = 'FULL_TIME') => {
-    try {
-      setLoading(true);
-      setError('');
-      await updateStaffStatus(staffId, { salary, status: currentStatus });
-      await loadData();
-    } catch (e) {
-      setError(e?.response?.data?.message || e?.message || 'Không thể cập nhật lương');
-    } finally {
-      setLoading(false);
-    }
-  };
+ 
 
   // Handle opening update form
   const handleOpenUpdateForm = (staff) => {
@@ -144,12 +137,12 @@ const StaffManagementForStaff = () => {
           const staffData = await getAllStaff();
           setStaff(staffData);
         }
-        setStations([]); // Staff doesn't need stations list
+ 
       } else {
         // If not STAFF role, show error message
         setError('Bạn không có quyền truy cập trang này. Vui lòng liên hệ admin.');
         setStaff([]);
-        setStations([]);
+ 
       }
     } catch (e) {
       console.error('Failed to load data:', e);
@@ -162,6 +155,17 @@ const StaffManagementForStaff = () => {
   useEffect(() => {
     loadData();
   }, [user?.role, user?.stationId]);
+
+  // Build station options from current staff list (works even if only one station)
+  const uniqueStations = Array.from(new Set((staff || []).map((s) => s.stationName).filter(Boolean)));
+
+  // Derived filtered list
+  const filteredStaff = staff.filter((s) => {
+    const matchesStation = stationFilter === 'ALL' || s.stationName === stationFilter;
+    const q = nameQuery.trim().toLowerCase();
+    const matchesName = !q || (String(s.firstName || '').toLowerCase().includes(q) || String(s.lastName || '').toLowerCase().includes(q));
+    return matchesStation && matchesName;
+  });
 
   return (
     <div className="min-h-screen bg-gray-50 pt-24">
@@ -194,6 +198,43 @@ const StaffManagementForStaff = () => {
         </div>
 
         {error && <div className="text-red-600 mb-4 p-3 bg-red-50 rounded">{error}</div>}
+
+        {/* Filters */}
+        <div className="bg-white p-3 rounded-md shadow mb-4">
+          <div className="flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between">
+            <div className="flex items-center bg-white border rounded-md shadow-sm px-3 py-2 w-full sm:w-auto">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-400 mr-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-4.35-4.35" />
+                <circle cx="11" cy="11" r="6" />
+              </svg>
+              <input
+                aria-label="Tìm theo tên nhân viên"
+                placeholder="Tìm theo họ hoặc tên nhân viên"
+                className="outline-none text-sm w-full sm:w-64"
+                value={nameQuery}
+                onChange={(e) => setNameQuery(e.target.value)}
+              />
+              {nameQuery && (
+                <button type="button" onClick={() => setNameQuery('')} className="ml-2 text-xs text-gray-500">Xóa</button>
+              )}
+            </div>
+
+            <div className="flex items-center gap-2">
+              <label htmlFor="station-filter" className="text-sm text-gray-600">Lọc theo trạm:</label>
+              <select
+                id="station-filter"
+                className="border rounded-md px-3 py-2 text-sm bg-white"
+                value={stationFilter}
+                onChange={(e) => setStationFilter(e.target.value)}
+              >
+                <option value="ALL">Tất cả trạm</option>
+                {uniqueStations.map((name) => (
+                  <option key={name} value={name}>{name}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+        </div>
 
         {/* Add Staff Form - Chỉ hiển thị khi STAFF có quyền */}
         {showForm && user?.role === 'STAFF' && (
@@ -488,12 +529,12 @@ const StaffManagementForStaff = () => {
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {staff.length === 0 ? (
+            {filteredStaff.length === 0 ? (
               <div className="col-span-full text-center py-12 text-gray-500">
                 Chưa có nhân viên nào.
               </div>
             ) : (
-              staff.map((s) => (
+              filteredStaff.map((s) => (
                 <div key={s.staffId} className="bg-white rounded-lg shadow-md overflow-hidden">
                   <div className="p-4">
                     <div className="flex items-center justify-between mb-3">

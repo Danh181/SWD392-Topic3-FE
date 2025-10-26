@@ -39,3 +39,11 @@ export async function changeStationStatus(id, newStatus) {
   const res = await API.patch(`/api/station/${id}/status?status=${newStatus}`);
   return res?.data?.data;
 }
+
+export async function getStationById(id) {
+  if (!id) {
+    throw new Error('Station ID is required');
+  }
+  const res = await API.get(`/api/station/${id}`);
+  return res?.data?.data;
+}
