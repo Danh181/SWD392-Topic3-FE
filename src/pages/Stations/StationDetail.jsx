@@ -1,7 +1,7 @@
 /* eslint-disable jsx-a11y/label-has-associated-control */
 /* eslint-disable no-nested-ternary */
 import { useEffect, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import Swal from 'sweetalert2';
 import { getStationById } from '../../services/station';
 import { getStationStaff } from '../../services/stationStaff';
@@ -9,6 +9,7 @@ import { getAllBatteries, addNewBattery, getAllBatteryModels, updateBatteryModel
 
 const StationDetail = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { id } = useParams();
   const [station, setStation] = useState(null);
   const [staff, setStaff] = useState([]);
@@ -518,7 +519,15 @@ const StationDetail = () => {
           {error}
         </div>
         <button
-          onClick={() => navigate(-1)}
+          onClick={() => {
+            const params = new URLSearchParams(location.search);
+            const from = params.get('from');
+            if (from === 'stations') {
+              navigate('/dashboard/admin?view=stations');
+            } else {
+              navigate(-1);
+            }
+          }}
           className="mt-4 px-4 py-2 bg-gray-200 rounded hover:bg-gray-300"
         >
           Quay lại
@@ -536,7 +545,15 @@ const StationDetail = () => {
       {/* Header */}
       <div className="flex items-center gap-4 mb-6">
         <button
-          onClick={() => navigate(-1)}
+          onClick={() => {
+            const params = new URLSearchParams(location.search);
+            const from = params.get('from');
+            if (from === 'stations') {
+              navigate('/dashboard/admin?view=stations');
+            } else {
+              navigate(-1);
+            }
+          }}
           className="p-2 hover:bg-gray-100 rounded-full transition-colors"
           title="Quay lại"
         >

@@ -160,7 +160,7 @@ export default function StaffManagement() {
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-4">
           <button
-            onClick={() => navigate('/dashboard/admin')}
+            onClick={() => { try { sessionStorage.setItem('adminActiveView','overview'); } catch {} navigate('/dashboard/admin?view=overview'); }}
             className="p-2 hover:bg-gray-100 rounded-full transition-colors"
             title="Quay lại"
           >

@@ -127,3 +127,57 @@ export async function getBatteriesByStation(stationId) {
     return [];
   }
 }
+
+// ============= Battery Monitoring APIs (Real-time) =============
+
+/**
+ * Get real-time battery states for a station
+ * Role: STAFF, ADMIN
+ * @param {string} stationId - Station UUID
+ * @returns {Promise<Array>} Array of BatteryState objects
+ */
+export async function getBatteryStatesByStation(stationId) {
+  const res = await API.get(`/api/battery-monitoring/station/${stationId}`);
+  return res?.data?.data ?? [];
+}
+
+/**
+ * Get real-time battery state for a single battery
+ * Role: STAFF, ADMIN
+ * @param {string} batteryId - Battery UUID
+ * @returns {Promise<Object>} BatteryState object
+ */
+export async function getBatteryStateById(batteryId) {
+  const res = await API.get(`/api/battery-monitoring/battery/${batteryId}`);
+  return res?.data?.data;
+}
+
+/**
+ * Get SSE connection statistics (admin only)
+ * Role: ADMIN
+ * @returns {Promise<Object>} Connection stats
+ */
+export async function getMonitoringStats() {
+  const res = await API.get('/api/battery-monitoring/stats');
+  return res?.data?.data ?? {};
+}
+
+/**
+ * Create SSE connection for real-time battery monitoring
+ * Role: STAFF, ADMIN
+ * @param {string} stationId - Station UUID
+ * @param {string} token - JWT token for authentication
+ * @returns {EventSource} SSE connection
+ */
+export function createBatteryMonitoringStream(stationId, token) {
+  const baseURL = API.defaults.baseURL || '';
+  const url = `${baseURL}/api/battery-monitoring/stream/${stationId}`;
+  
+  // EventSource doesn't support custom headers, so we pass token as query param
+  // or use a library that supports headers
+  const eventSource = new EventSource(url, {
+    withCredentials: true
+  });
+  
+  return eventSource;
+}

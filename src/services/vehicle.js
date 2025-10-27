@@ -11,7 +11,7 @@ export async function registerVehicle(payload) {
 }
 
 export async function updateVehicle(vehicleId, payload) {
-  const res = await API.put(`/api/vehicle/${vehicleId}`, payload);
+  const res = await API.patch(`/api/vehicle/${vehicleId}`, payload);
   return res?.data?.data;
 }
 

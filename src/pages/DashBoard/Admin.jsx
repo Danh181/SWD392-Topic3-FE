@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import Swal from 'sweetalert2';
 import {
   LayoutDashboard,
@@ -14,11 +14,13 @@ import API, { logout as apiLogout, clearTokens } from '../../services/auth';
 import { getUsers, getUsersByRole } from '../../services/admin';
 import { resolveAssetUrl } from '../../services/user';
 import { getAllStations, createStation, updateStation, changeStationStatus } from '../../services/station';
-import { getAllBatteries, getAllBatteryModels, defineBatteryModel, updateBatteryModel } from '../../services/battery';
+import { getAllBatteries, getAllBatteryModels, defineBatteryModel, updateBatteryModel, getMonitoringStats } from '../../services/battery';
 
 const Admin = () => {
+  const STORAGE_KEY = 'adminActiveView';
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const navigate = useNavigate();
+  const location = useLocation();
   const { logout: contextLogout } = useAuth();
 
   const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen);
@@ -27,7 +29,10 @@ const Admin = () => {
   const [stations, setStations] = useState([]);
   const [batteries, setBatteries] = useState([]);
   const [batteryModels, setBatteryModels] = useState([]);
-  const [batteryTab, setBatteryTab] = useState('batteries'); // 'batteries' | 'models'
+  const [batteryTab, setBatteryTab] = useState('batteries'); // 'batteries' | 'models' | 'stats'
+  const [monitoringStats, setMonitoringStats] = useState(null);
+  const [statsLoading, setStatsLoading] = useState(false);
+  const [statsError, setStatsError] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [selectedRole, setSelectedRole] = useState('ALL');
@@ -110,11 +115,41 @@ const Admin = () => {
     }
   };
 
+  const loadMonitoringStats = async () => {
+    try {
+      setStatsLoading(true);
+      setStatsError('');
+      const stats = await getMonitoringStats();
+      setMonitoringStats(stats);
+    } catch (e) {
+      console.error('Failed to load monitoring stats:', e);
+      setStatsError(e?.message || 'Không thể tải thống kê monitoring');
+    } finally {
+      setStatsLoading(false);
+    }
+  };
+
   // Load initial data
   useEffect(() => {
     loadUserCount();
     loadStations();
   }, []);
+
+  // Sync activeView with query param `view` when landing; default to overview on bare route
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const view = params.get('view');
+    const allowed = ['overview', 'users', 'stations', 'batteries'];
+    if (view && allowed.includes(view)) {
+      if (view !== activeView) setActiveView(view);
+      try { sessionStorage.setItem(STORAGE_KEY, view); } catch {}
+    } else {
+      // No view param present: always default to overview
+      if (activeView !== 'overview') setActiveView('overview');
+      try { sessionStorage.setItem(STORAGE_KEY, 'overview'); } catch {}
+      navigate('/dashboard/admin?view=overview', { replace: true });
+    }
+  }, [location.search]);
 
   // Ensure counts refresh when switching back to overview
   useEffect(() => {
@@ -123,6 +158,13 @@ const Admin = () => {
       loadStations();
     }
   }, [activeView]);
+
+  // Auto load stats when switching to batteries > stats tab
+  useEffect(() => {
+    if (activeView === 'batteries' && batteryTab === 'stats') {
+      loadMonitoringStats();
+    }
+  }, [activeView, batteryTab]);
 
   return (
     <div className="flex h-screen bg-gray-100">
@@ -149,7 +191,7 @@ const Admin = () => {
           <ul className="space-y-3">
             <li>
               <button
-                onClick={() => { setActiveView('overview'); loadUserCount(); }}
+                onClick={() => { setActiveView('overview'); loadUserCount(); try{sessionStorage.setItem(STORAGE_KEY,'overview');}catch{} navigate('/dashboard/admin?view=overview', { replace: true }); }}
                 className="flex items-center gap-3 p-2 rounded hover:bg-[#335cff] w-full text-left"
               >
                 <LayoutDashboard /> {isSidebarOpen && "Dashboard"}
@@ -157,7 +199,7 @@ const Admin = () => {
             </li>
             <li>
               <button
-                onClick={() => { setActiveView('users'); loadUsers(); }}
+                onClick={() => { setActiveView('users'); loadUsers(); try{sessionStorage.setItem(STORAGE_KEY,'users');}catch{} navigate('/dashboard/admin?view=users', { replace: true }); }}
                 className="flex items-center gap-3 p-2 rounded hover:bg-[#335cff] w-full text-left"
               >
                 <Users /> {isSidebarOpen && "Quản lý Users"}
@@ -165,7 +207,7 @@ const Admin = () => {
             </li>
             <li>
               <button
-                onClick={() => { setActiveView('stations'); loadStations(); }}
+                onClick={() => { setActiveView('stations'); loadStations(); try{sessionStorage.setItem(STORAGE_KEY,'stations');}catch{} navigate('/dashboard/admin?view=stations', { replace: true }); }}
                 className="flex items-center gap-3 p-2 rounded hover:bg-[#335cff] w-full text-left"
               >
                 <Battery /> {isSidebarOpen && "Quản lý trạm"}
@@ -190,7 +232,7 @@ const Admin = () => {
             </li>
             <li>
               <button
-                onClick={() => { setActiveView('batteries'); loadBatteries(); }}
+                onClick={() => { setActiveView('batteries'); loadBatteries(); try{sessionStorage.setItem(STORAGE_KEY,'batteries');}catch{} navigate('/dashboard/admin?view=batteries', { replace: true }); }}
                 className="flex items-center gap-3 p-2 rounded hover:bg-[#335cff] w-full text-left"
               >
                 <FileBarChart /> {isSidebarOpen && "Pin"}
@@ -736,7 +778,7 @@ const Admin = () => {
                         <td className="p-3">
                           <div className="flex items-center gap-2">
                             <button
-                              onClick={() => navigate(`/dashboard/admin/station/${station.id || station.stationId}`)}
+                              onClick={() => navigate(`/dashboard/admin/station/${station.id || station.stationId}?from=stations`)}
                               className="text-[#155dfc] hover:text-[#193cb8] font-medium"
                             >
                               Xem chi tiết
@@ -968,6 +1010,16 @@ const Admin = () => {
                   }`}
                 >
                   Battery Models ({batteryModels.length})
+                </button>
+                <button
+                  onClick={() => setBatteryTab('stats')}
+                  className={`pb-3 px-1 border-b-2 font-medium text-sm transition-colors ${
+                    batteryTab === 'stats'
+                      ? 'border-[#0028b8] text-[#0028b8]'
+                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  }`}
+                >
+                  Realtime Stats
                 </button>
               </nav>
             </div>
@@ -1277,6 +1329,94 @@ const Admin = () => {
                         ))}
                       </tbody>
                     </table>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Monitoring Stats Tab */}
+            {batteryTab === 'stats' && (
+              <div>
+                <div className="mb-4 flex items-center justify-between">
+                  <div>
+                    <h3 className="text-lg font-semibold">SSE Monitoring Stats</h3>
+                    <p className="text-sm text-gray-500">Thống kê kết nối realtime của hệ thống</p>
+                  </div>
+                  <button
+                    onClick={loadMonitoringStats}
+                    className="px-4 py-2 bg-[#0028b8] text-white rounded-md hover:bg-[#001a8b] transition-colors"
+                  >
+                    🔄 Làm mới
+                  </button>
+                </div>
+
+                {statsError && (
+                  <div className="bg-red-50 border border-red-200 text-red-700 p-4 rounded mb-6">{statsError}</div>
+                )}
+
+                {statsLoading ? (
+                  <div className="flex justify-center py-8">
+                    <div className="w-10 h-10 border-4 border-gray-200 border-t-[#00b894] rounded-full animate-spin" />
+                  </div>
+                ) : !monitoringStats ? (
+                  <div className="text-gray-500">Chưa có dữ liệu</div>
+                ) : (
+                  <div className="space-y-6">
+                    {/* Quick summary cards if common fields exist */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                      {typeof monitoringStats.totalConnections !== 'undefined' && (
+                        <div className="bg-white rounded-lg shadow p-4">
+                          <p className="text-sm text-gray-500">Tổng kết nối</p>
+                          <p className="text-2xl font-bold">{monitoringStats.totalConnections}</p>
+                        </div>
+                      )}
+                      {typeof monitoringStats.activeEmitters !== 'undefined' && (
+                        <div className="bg-white rounded-lg shadow p-4">
+                          <p className="text-sm text-gray-500">Emitters đang hoạt động</p>
+                          <p className="text-2xl font-bold">{monitoringStats.activeEmitters}</p>
+                        </div>
+                      )}
+                      {typeof monitoringStats.connectedStations !== 'undefined' && (
+                        <div className="bg-white rounded-lg shadow p-4">
+                          <p className="text-sm text-gray-500">Số trạm có kết nối</p>
+                          <p className="text-2xl font-bold">{monitoringStats.connectedStations}</p>
+                        </div>
+                      )}
+                      {typeof monitoringStats.uptimeSeconds !== 'undefined' && (
+                        <div className="bg-white rounded-lg shadow p-4">
+                          <p className="text-sm text-gray-500">Uptime (giây)</p>
+                          <p className="text-2xl font-bold">{monitoringStats.uptimeSeconds}</p>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Per station table if provided */}
+                    {(Array.isArray(monitoringStats.perStation) || Array.isArray(monitoringStats.stationConnections)) && (
+                      <div className="bg-white rounded-lg shadow p-4 overflow-x-auto">
+                        <table className="min-w-full">
+                          <thead className="bg-gray-50">
+                            <tr>
+                              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Trạm</th>
+                              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Số kết nối</th>
+                            </tr>
+                          </thead>
+                          <tbody className="bg-white divide-y divide-gray-200">
+                            {(monitoringStats.perStation || monitoringStats.stationConnections).map((row, idx) => (
+                              <tr key={row.stationId || idx} className="hover:bg-gray-50">
+                                <td className="px-4 py-3 whitespace-nowrap text-sm font-mono">{row.stationName || row.stationId || 'N/A'}</td>
+                                <td className="px-4 py-3 whitespace-nowrap text-sm">{row.connections || row.count || 0}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
+
+                    {/* Fallback raw JSON */}
+                    <div className="bg-gray-50 border rounded p-4">
+                      <p className="text-sm font-semibold mb-2">Raw stats</p>
+                      <pre className="text-xs overflow-auto">{JSON.stringify(monitoringStats, null, 2)}</pre>
+                    </div>
                   </div>
                 )}
               </div>

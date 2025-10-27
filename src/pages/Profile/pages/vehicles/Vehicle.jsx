@@ -9,6 +9,7 @@ const Vehicle = () => {
   const [saving, setSaving] = useState(false);
   const [editingVehicle, setEditingVehicle] = useState(null);
   const [editForm, setEditForm] = useState({ make: '', model: '', year: '', licensePlate: '', batteryType: '', batteryCapacity: '' });
+  const [editLock, setEditLock] = useState({ vin: false, batteryType: false });
 
   const load = async () => {
     try {
@@ -72,6 +73,7 @@ const Vehicle = () => {
       batteryType: vehicle.batteryType || '',
       batteryCapacity: vehicle.batteryCapacity || '',
     });
+    setEditLock({ vin: false, batteryType: false });
   };
 
   const handleEditChange = (e) => {
@@ -83,6 +85,7 @@ const Vehicle = () => {
     e.preventDefault();
     try {
       setSaving(true);
+      setError('');
       // basic validations
       const y = Number(editForm.year);
       const now = new Date().getFullYear();
@@ -105,12 +108,23 @@ const Vehicle = () => {
         batteryType: editForm.batteryType.trim(),
         batteryCapacity: capacity,
       };
-      await updateVehicle(editingVehicle.id, payload);
+      await updateVehicle(editingVehicle.vehicleId, payload);
       setEditingVehicle(null);
       setEditForm({ make: '', model: '', year: '', licensePlate: '', batteryType: '', batteryCapacity: '' });
+      setEditLock({ vin: false, batteryType: false });
       await load();
     } catch (e) {
-      setError(e?.message || 'Không thể cập nhật phương tiện');
+      const msg = e?.message || '';
+      // If BE blocks VIN or batteryType update after swap, lock those fields
+      if (msg.includes('Cannot update VIN after vehicle has been used in swap transaction')) {
+        setEditLock(prev => ({ ...prev, vin: true }));
+        setError('Không thể sửa VIN vì xe đã từng tham gia giao dịch.');
+      } else if (msg.includes('Cannot update battery type after vehicle has been used in swap transaction')) {
+        setEditLock(prev => ({ ...prev, batteryType: true }));
+        setError('Không thể sửa loại pin vì xe đã từng tham gia giao dịch.');
+      } else {
+        setError(msg || 'Không thể cập nhật phương tiện');
+      }
     } finally {
       setSaving(false);
     }
@@ -118,7 +132,8 @@ const Vehicle = () => {
 
   const handleCancelEdit = () => {
     setEditingVehicle(null);
-    setEditForm({ make: '', model: '', licensePlate: '', batteryType: '', batteryCapacity: '' });
+    setEditForm({ make: '', model: '', year: '', licensePlate: '', batteryType: '', batteryCapacity: '' });
+    setEditLock({ vin: false, batteryType: false });
   };
 
   return (
@@ -145,7 +160,7 @@ const Vehicle = () => {
               </thead>
               <tbody>
                 {vehicles.map(v => (
-                  <tr key={v.id} className="border-t">
+                  <tr key={v.vehicleId} className="border-t">
                     <td className="p-2">{v.vin}</td>
                     <td className="p-2">{v.make}</td>
                     <td className="p-2">{v.model}</td>
@@ -157,7 +172,6 @@ const Vehicle = () => {
                     <td className="p-2">
                       <div className="flex gap-2">
                         <button onClick={() => handleEdit(v)} className="px-2 py-1 text-sm rounded bg-blue-50 text-blue-600 hover:bg-blue-100">Sửa</button>
-                        <button onClick={() => handleDeactivate(v.id)} className="px-2 py-1 text-sm rounded bg-red-50 text-red-600 hover:bg-red-100">Xoá</button>
                       </div>
                     </td>
                   </tr>
@@ -175,11 +189,13 @@ const Vehicle = () => {
         <div className="bg-white rounded-xl shadow p-4">
           <h3 className="text-lg font-semibold mb-3">Sửa phương tiện: {editingVehicle.vin}</h3>
           <form onSubmit={handleUpdate} className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            {/* VIN chỉ hiển thị, không cho sửa */}
+            <input value={editingVehicle.vin} disabled className="border rounded px-3 py-2 bg-gray-100" placeholder="VIN" />
             <input name="make" value={editForm.make} onChange={handleEditChange} placeholder="Hãng" className="border rounded px-3 py-2" required />
             <input name="model" value={editForm.model} onChange={handleEditChange} placeholder="Mẫu" className="border rounded px-3 py-2" required />
             <input name="year" value={editForm.year} onChange={handleEditChange} placeholder="Năm" type="number" className="border rounded px-3 py-2" required />
             <input name="licensePlate" value={editForm.licensePlate} onChange={handleEditChange} placeholder="Biển số" className="border rounded px-3 py-2" required />
-            <input name="batteryType" value={editForm.batteryType} onChange={handleEditChange} placeholder="Loại pin" className="border rounded px-3 py-2" required />
+            <input name="batteryType" value={editForm.batteryType} onChange={handleEditChange} placeholder="Loại pin" className="border rounded px-3 py-2" required disabled={editLock.batteryType} />
             <input name="batteryCapacity" value={editForm.batteryCapacity} onChange={handleEditChange} placeholder="Dung lượng (kWh)" type="number" step="0.1" className="border rounded px-3 py-2" required />
             <div className="md:col-span-2 flex justify-end gap-2">
               <button type="button" onClick={handleCancelEdit} className="px-4 py-2 rounded bg-gray-200 text-gray-700 hover:bg-gray-300">

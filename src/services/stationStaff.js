@@ -1,6 +1,14 @@
 import API from './auth';
 
 /**
+ * Get current staff's station assignment info
+ */
+export async function getMyStaffInfo() {
+  const res = await API.get('/api/station-staff/me');
+  return res?.data?.data ?? null;
+}
+
+/**
  * Get all staff members
  * BE already returns full staff info (firstName, lastName, email, etc.)
  */
