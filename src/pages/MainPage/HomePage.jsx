@@ -1,30 +1,16 @@
-import React, { useState } from "react";
+import React from "react";
 import { useNavigate } from "react-router-dom";
-<<<<<<< HEAD
-import { useAuth } from '../../context/AuthContext';
-import Header from '../../components/Header';
-import BookingBatteryModal from '../../components/BookingBatteryModal';
-=======
 import { useAuth } from "../../context/AuthContext";
 import Header from "../../components/Header";
->>>>>>> f8fa6f2103dacc472fb4fa188a372fab8ee42b56
 
 const HomePage = () => {
   const navigate = useNavigate();
   const { user, hasRole } = useAuth();
 
   let displayName = null;
-<<<<<<< HEAD
 if (user) {
   displayName = user.lastName?.trim() || null;
 }
-=======
-  if (user) {
-    const given = user.firstName || user.username || user.email || "";
-    const family = user.lastName ? ` ${user.lastName}` : "";
-    displayName = (given + family).trim() || null;
-  }
->>>>>>> f8fa6f2103dacc472fb4fa188a372fab8ee42b56
 
   const demoCars = [
     {
@@ -53,24 +39,10 @@ if (user) {
     },
   ];
 
-  const [showBooking, setShowBooking] = useState(false);
-
   return (
     <div className="min-h-screen bg-[#f4f5f7] flex flex-col">
       <Header />
 
-<<<<<<< HEAD
-      <div className="w-full max-w-4xl flex flex-col items-center mb-8 text-center mt-4">
-        <h1 className="text-3xl font-bold text-[#0028b8] mb-2">
-          {user ? `Xin chào, ${displayName} 👋` : "Chào mừng bạn đến với EV Battery Swapper"}
-        </h1>
-        <p className="text-[#0028b8] mb-6">
-          {user
-            ? "Chào mừng đến với hệ thống EV Battery Swapper"
-            : "Bạn có thể xem các mẫu xe hỗ trợ đổi pin dưới đây hoặc đăng nhập để trải nghiệm đầy đủ"}
-        </p>
-      </div>
-=======
       {/* Hero Section */}
       <section className="relative w-full bg-gradient-to-r from-[#0a1a2f] via-[#0d2e50] to-[#133b62] text-white py-20 px-6 text-center mt-[72px]">
         <div className="max-w-3xl mx-auto relative z-10">
@@ -98,7 +70,6 @@ if (user) {
             Danh sách những mẫu xe điện phổ biến có thể sử dụng dịch vụ đổi pin của chúng tôi.
           </p>
         </div>
->>>>>>> f8fa6f2103dacc472fb4fa188a372fab8ee42b56
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto">
           {demoCars.map((car) => (
@@ -192,9 +163,6 @@ if (user) {
           </div>
         </section>
       )}
-
-      {/* Modal đặt lịch đổi/thuê pin */}
-      <BookingBatteryModal open={showBooking} onClose={() => setShowBooking(false)} onBooked={() => {}} />
     </div>
   );
 };
