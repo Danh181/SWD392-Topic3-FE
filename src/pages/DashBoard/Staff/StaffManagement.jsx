@@ -1,0 +1,574 @@
+/* eslint-disable jsx-a11y/label-has-associated-control */
+import { useEffect, useState } from 'react';
+import { getAllStaff, createStaff, updateStaffStatus, deleteStaff } from '../../../services/stationStaff';
+import { getAllStations } from '../../../services/station';
+
+import { useNavigate } from 'react-router-dom';
+
+export default function StaffManagement() {
+  const navigate = useNavigate();
+  const [staff, setStaff] = useState([]);
+  const [stations, setStations] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  // Filters
+  const [nameQuery, setNameQuery] = useState('');
+  const [stationFilter, setStationFilter] = useState('ALL');
+  
+  // Form state
+  const [showForm, setShowForm] = useState(false);
+  const [showUpdateForm, setShowUpdateForm] = useState(false);
+  const [selectedStaff, setSelectedStaff] = useState(null);
+  const [formData, setFormData] = useState({
+    staffEmail: '',
+    password: '',
+    confirmPassword: '',
+    phone: '',
+    firstName: '',
+    lastName: '',
+    dateOfBirth: '',
+    identityNumber: '',
+    avatarUrl: '',
+    stationName: '',
+    salary: 0,
+    status: 'FULL_TIME',
+    gender: 'MALE'
+  });
+  const [updateData, setUpdateData] = useState({
+    salary: 0,
+    status: 'FULL_TIME'
+  });
+
+  // Load data
+  const loadData = async () => {
+    try {
+      setLoading(true);
+      setError('');
+      const [staffData, stationsData] = await Promise.all([
+        getAllStaff(),
+        getAllStations()
+      ]);
+      setStaff(staffData);
+      setStations(stationsData);
+    } catch (e) {
+      console.error('Failed to load data:', e);
+      setError(e?.response?.data?.message || e?.message || 'Không thể tải dữ liệu');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadData();
+  }, []);
+
+  // Derived filtered list
+  const filteredStaff = staff.filter((s) => {
+    const matchesStation = stationFilter === 'ALL' || s.stationName === stationFilter;
+    const q = nameQuery.trim().toLowerCase();
+    const matchesName = !q || (String(s.firstName || '').toLowerCase().includes(q) || String(s.lastName || '').toLowerCase().includes(q));
+    return matchesStation && matchesName;
+  });
+
+  // Handle form submission
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      setLoading(true);
+      setError('');
+      
+      const requestData = {
+        ...formData,
+        salary: Number(formData.salary) // Convert to number
+      };
+      
+      await createStaff(requestData);
+      setShowForm(false);
+      setFormData({
+        staffEmail: '',
+        password: '',
+        confirmPassword: '',
+        phone: '',
+        firstName: '',
+        lastName: '',
+        dateOfBirth: '',
+        identityNumber: '',
+        avatarUrl: '',
+        stationName: '',
+        salary: 0,
+        status: 'FULL_TIME',
+        gender: 'MALE'
+      });
+      await loadData(); // Reload data
+    } catch (e) {
+      setError(e?.response?.data?.message || e?.message || 'Không thể thêm nhân viên');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Handle staff deletion
+  const handleDelete = async (staffId) => {
+    if (!globalThis.confirm('Bạn có chắc muốn xóa nhân viên này?')) return;
+    
+    try {
+      setLoading(true);
+      setError('');
+      await deleteStaff(staffId);
+      await loadData(); // Reload data
+    } catch (e) {
+      setError(e?.response?.data?.message || e?.message || 'Không thể xóa nhân viên');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // (Deprecated) handleStatusUpdate removed - updates are done via update form
+
+  // Handle opening update form
+  const handleOpenUpdateForm = (staff) => {
+    setSelectedStaff(staff);
+    setUpdateData({
+      salary: staff.salary,
+      status: staff.status
+    });
+    setShowUpdateForm(true);
+  };
+
+  // Handle update form submission
+  const handleUpdateSubmit = async (e) => {
+    e.preventDefault();
+    
+    if (!selectedStaff) return;
+    
+    try {
+      setLoading(true);
+      setError('');
+      await updateStaffStatus(selectedStaff.staffId, updateData);
+      setShowUpdateForm(false);
+      setSelectedStaff(null);
+      await loadData();
+    } catch (e) {
+      setError(e?.response?.data?.message || e?.message || 'Không thể cập nhật thông tin');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="p-6 max-w-7xl mx-auto">
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center gap-4">
+          <button
+            onClick={() => { try { sessionStorage.setItem('adminActiveView','overview'); } catch {} navigate('/dashboard/admin?view=overview'); }}
+            className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+            title="Quay lại"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
+          </button>
+          <div>
+            <h1 className="text-2xl font-bold">Quản lý nhân viên trạm</h1>
+            <p className="text-sm text-gray-500">Quản lý nhân viên các trạm sạc pin</p>
+          </div>
+        </div>
+        <button
+          onClick={() => setShowForm(true)}
+          className="px-4 py-2 bg-[#0028b8] text-white rounded-md shadow hover:bg-[#335cff]"
+        >
+          Thêm nhân viên
+        </button>
+      </div>
+
+      {error && <div className="text-red-600 mb-4 p-3 bg-red-50 rounded">{error}</div>}
+
+      {/* Filters */}
+      <div className="bg-white p-3 rounded-md shadow mb-4">
+        <div className="flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between">
+          <div className="flex items-center bg-white border rounded-md shadow-sm px-3 py-2 w-full sm:w-auto">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-400 mr-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-4.35-4.35" />
+              <circle cx="11" cy="11" r="6" />
+            </svg>
+            <input
+              aria-label="Tìm theo tên nhân viên"
+              placeholder="Tìm theo họ hoặc tên nhân viên"
+              className="outline-none text-sm w-full sm:w-64"
+              value={nameQuery}
+              onChange={(e) => setNameQuery(e.target.value)}
+            />
+            {nameQuery && (
+              <button type="button" onClick={() => setNameQuery('')} className="ml-2 text-xs text-gray-500">Xóa</button>
+            )}
+          </div>
+
+          <div className="flex items-center gap-2">
+            <label htmlFor="station-filter" className="text-sm text-gray-600">Lọc theo trạm:</label>
+            <select
+              id="station-filter"
+              className="border rounded-md px-3 py-2 text-sm bg-white"
+              value={stationFilter}
+              onChange={(e) => setStationFilter(e.target.value)}
+            >
+              <option value="ALL">Tất cả trạm</option>
+              {stations.map((st) => (
+                <option key={st.id || st.stationId || st.name} value={st.name}>{st.name}</option>
+              ))}
+            </select>
+          </div>
+        </div>
+      </div>
+
+      {/* Add Staff Form */}
+      {showForm && (
+        <div className="fixed inset-0 bg-gray-100/80 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full shadow-xl">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-semibold">Thêm nhân viên mới</h2>
+              <button
+                onClick={() => setShowForm(false)}
+                className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                </svg>
+              </button>
+            </div>
+            <form onSubmit={handleSubmit} className="max-h-[70vh] overflow-y-auto pr-2">
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Email nhân viên *
+                </label>
+                <input
+                  type="email"
+                  required
+                  value={formData.staffEmail}
+                  onChange={(e) => setFormData({...formData, staffEmail: e.target.value})}
+                  className="w-full p-2 border rounded focus:ring-2 focus:ring-[#0028b8] outline-none"
+                  placeholder="vit@gmail.com"
+                />
+              </div>
+
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Mật khẩu *
+                </label>
+                <input
+                  type="password"
+                  required
+                  minLength={8}
+                  value={formData.password}
+                  onChange={(e) => setFormData({...formData, password: e.target.value})}
+                  className="w-full p-2 border rounded focus:ring-2 focus:ring-[#0028b8] outline-none"
+                  placeholder="Tối thiểu 8 ký tự"
+                />
+              </div>
+
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Xác nhận mật khẩu *
+                </label>
+                <input
+                  type="password"
+                  required
+                  value={formData.confirmPassword}
+                  onChange={(e) => setFormData({...formData, confirmPassword: e.target.value})}
+                  className="w-full p-2 border rounded focus:ring-2 focus:ring-[#0028b8] outline-none"
+                  placeholder="Nhập lại mật khẩu"
+                />
+              </div>
+
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Họ *
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={formData.firstName}
+                  onChange={(e) => setFormData({...formData, firstName: e.target.value})}
+                  className="w-full p-2 border rounded focus:ring-2 focus:ring-[#0028b8] outline-none"
+                  placeholder="Nguyễn Văn"
+                />
+              </div>
+
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Tên *
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={formData.lastName}
+                  onChange={(e) => setFormData({...formData, lastName: e.target.value})}
+                  className="w-full p-2 border rounded focus:ring-2 focus:ring-[#0028b8] outline-none"
+                  placeholder="A"
+                />
+              </div>
+
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Ngày sinh *
+                </label>
+                <input
+                  type="date"
+                  required
+                  value={formData.dateOfBirth}
+                  onChange={(e) => setFormData({...formData, dateOfBirth: e.target.value})}
+                  className="w-full p-2 border rounded focus:ring-2 focus:ring-[#0028b8] outline-none"
+                />
+              </div>
+
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Giới tính *
+                </label>
+                <select
+                  required
+                  value={formData.gender}
+                  onChange={(e) => setFormData({...formData, gender: e.target.value})}
+                  className="w-full p-2 border rounded focus:ring-2 focus:ring-[#0028b8] outline-none"
+                >
+                  <option value="MALE">Nam</option>
+                  <option value="FEMALE">Nữ</option>
+                </select>
+              </div>
+
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Số điện thoại
+                </label>
+                <input
+                  type="tel"
+                  value={formData.phone}
+                  onChange={(e) => setFormData({...formData, phone: e.target.value})}
+                  className="w-full p-2 border rounded focus:ring-2 focus:ring-[#0028b8] outline-none"
+                  placeholder="0123456789"
+                />
+              </div>
+
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  CMND/CCCD
+                </label>
+                <input
+                  type="text"
+                  value={formData.identityNumber}
+                  onChange={(e) => setFormData({...formData, identityNumber: e.target.value})}
+                  className="w-full p-2 border rounded focus:ring-2 focus:ring-[#0028b8] outline-none"
+                  placeholder="Số CMND/CCCD"
+                />
+              </div>
+
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  URL Avatar
+                </label>
+                <input
+                  type="url"
+                  value={formData.avatarUrl}
+                  onChange={(e) => setFormData({...formData, avatarUrl: e.target.value})}
+                  className="w-full p-2 border rounded focus:ring-2 focus:ring-[#0028b8] outline-none"
+                  placeholder="https://example.com/avatar.jpg"
+                />
+              </div>
+              
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Trạm *
+                </label>
+                <select
+                  required
+                  value={formData.stationName}
+                  onChange={(e) => setFormData({...formData, stationName: e.target.value})}
+                  className="w-full p-2 border rounded focus:ring-2 focus:ring-[#0028b8] outline-none"
+                >
+                  <option value="">Chọn trạm</option>
+                  {stations.map(station => (
+                    <option key={station.id} value={station.name}>
+                      {station.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Lương *
+                </label>
+                <input
+                  type="number"
+                  required
+                  min="0"
+                  value={formData.salary}
+                  onChange={(e) => setFormData({...formData, salary: e.target.value})}
+                  className="w-full p-2 border rounded focus:ring-2 focus:ring-[#0028b8] outline-none"
+                  placeholder="5000000"
+                />
+              </div>
+
+              <div className="mb-6">
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Trạng thái làm việc *
+                </label>
+                <select
+                  required
+                  value={formData.status}
+                  onChange={(e) => setFormData({...formData, status: e.target.value})}
+                  className="w-full p-2 border rounded focus:ring-2 focus:ring-[#0028b8] outline-none"
+                >
+                  <option value="FULL_TIME">Toàn thời gian</option>
+                  <option value="PART_TIME">Bán thời gian</option>
+                </select>
+              </div>
+
+              <div className="flex justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setShowForm(false)}
+                  className="px-4 py-2 text-gray-600 bg-gray-100 rounded hover:bg-gray-200"
+                >
+                  Hủy
+                </button>
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="px-4 py-2 bg-[#0028b8] text-white rounded hover:bg-[#335cff] disabled:opacity-50"
+                >
+                  {loading ? 'Đang xử lý...' : 'Thêm'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Update Staff Form */}
+      {showUpdateForm && selectedStaff && (
+        <div className="fixed inset-0 bg-gray-100/80 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white rounded-lg p-6 max-w-sm w-full shadow-xl">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold">Cập nhật nhân viên</h2>
+              <button
+                onClick={() => setShowUpdateForm(false)}
+                className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                </svg>
+              </button>
+            </div>
+
+            <form onSubmit={handleUpdateSubmit}>
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Lương
+                </label>
+                <input
+                  type="number"
+                  required
+                  min="0"
+                  value={updateData.salary}
+                  onChange={(e) => setUpdateData({...updateData, salary: e.target.value})}
+                  className="w-full p-2 border rounded focus:ring-2 focus:ring-[#0028b8] outline-none"
+                  placeholder="Mức lương"
+                />
+              </div>
+
+              <div className="mb-6">
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Trạng thái làm việc
+                </label>
+                <select
+                  required
+                  value={updateData.status}
+                  onChange={(e) => setUpdateData({...updateData, status: e.target.value})}
+                  className="w-full p-2 border rounded focus:ring-2 focus:ring-[#0028b8] outline-none"
+                >
+                  <option value="FULL_TIME">Toàn thời gian</option>
+                  <option value="PART_TIME">Bán thời gian</option>
+                </select>
+              </div>
+
+              <div className="flex justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setShowUpdateForm(false)}
+                  className="px-4 py-2 text-gray-600 bg-gray-100 rounded hover:bg-gray-200"
+                >
+                  Hủy
+                </button>
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="px-4 py-2 bg-[#0028b8] text-white rounded hover:bg-[#335cff] disabled:opacity-50"
+                >
+                  {loading ? 'Đang xử lý...' : 'Cập nhật'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Staff List */}
+      {loading && !showForm ? (
+        <div className="flex items-center justify-center py-12">
+          <div className="w-10 h-10 border-4 border-gray-200 border-t-[#0028b8] rounded-full animate-spin" />
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          {filteredStaff.length === 0 ? (
+            <div className="col-span-full text-center py-12 text-gray-500">
+              Chưa có nhân viên nào.
+            </div>
+          ) : (
+            filteredStaff.map((s) => (
+              <div key={s.staffId} className="bg-white rounded-lg shadow-md overflow-hidden">
+                <div className="p-4">
+                  <div className="flex items-center justify-between mb-3">
+                    <span className={`px-2 py-1 text-xs font-semibold rounded-full 
+                      ${s.status === 'FULL_TIME' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}>
+                      {s.status === 'FULL_TIME' ? 'Toàn thời gian' : 'Bán thời gian'}
+                    </span>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => handleOpenUpdateForm(s)}
+                        className="text-blue-600 hover:text-blue-800"
+                        title="Cập nhật thông tin"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                          <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
+                        </svg>
+                      </button>
+                      <button
+                        onClick={() => handleDelete(s.staffId)}
+                        className="text-red-600 hover:text-red-800"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                          <path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
+                        </svg>
+                      </button>
+                    </div>
+                  </div>
+                  
+                  <div className="mb-3">
+                    <h3 className="font-semibold text-lg">{s.firstName} {s.lastName}</h3>
+                    <p className="text-sm text-gray-600">{s.staffEmail}</p>
+                  </div>
+
+                  <div className="text-sm text-gray-700">
+                    <p className="font-medium">Trạm: {s.stationName}</p>
+                    <p className="mb-1">Ngày bắt đầu: {new Date(s.attachedAt).toLocaleDateString('vi-VN')}</p>
+                    <p>Lương: {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(s.salary)}</p>
+                  </div>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
