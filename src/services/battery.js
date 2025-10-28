@@ -10,14 +10,16 @@ import API from './auth';
 /**
  * Get all batteries (paginated)
  * Role: ADMIN
- * @param {number} page - Page index (1-based)
+ * @param {number} page - Page index (1-based for backend)
+ * @param {number} size - Page size
  */
-export async function getAllBatteries(page = 1) {
-  const res = await API.get('/api/battery/all', { params: { page } });
+export async function getAllBatteries(page = 1, size = 20) {
+  const res = await API.get('/api/battery/all', { params: { page, size } });
   const data = res?.data?.data;
   // Support both array and paginated { content: [] } shapes
   if (Array.isArray(data)) return data;
   if (data?.content && Array.isArray(data.content)) return data.content;
+  if (data?.items && Array.isArray(data.items)) return data.items;
   return [];
 }
 
@@ -70,17 +72,25 @@ export async function defineBatteryModel(payload) {
 
 /**
  * Get all battery models (paginated)
- * Role: ADMIN
- * @param {number} page - Page index (1-based)
+ * Role: Public (no auth required based on BE @GetMapping without @PreAuthorize)
+ * @param {number} page - Page index (1-based for backend)
+ * @param {number} size - Page size
  */
-export async function getAllBatteryModels(page = 1) {
-  const res = await API.get('/api/battery/model', { params: { page } });
+export async function getAllBatteryModels(page = 1, size = 20) {
+  const res = await API.get('/api/battery/model', { params: { page, size } });
   const data = res?.data?.data;
   // Support both array and paginated { content: [] } shapes
   if (Array.isArray(data)) return data;
   if (data?.content && Array.isArray(data.content)) return data.content;
+  if (data?.items && Array.isArray(data.items)) return data.items;
   return [];
 }
+
+/**
+ * Alias for getAllBatteryModels - for driver use case
+ * @param {number} page - Page index (1-based), optional
+ */
+export const getBatteryModels = getAllBatteryModels;
 
 /**
  * Update a battery model

@@ -1,24 +1,25 @@
-import React from "react";
+import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from '../../context/AuthContext';
 import Header from '../../components/Header';
+import BookingBatteryModal from '../../components/BookingBatteryModal';
 
 const HomePage = () => {
   const navigate = useNavigate();
   const { user, hasRole } = useAuth();
 
   let displayName = null;
-  if (user) {
-    const given = user.firstName || user.username || user.email || '';
-    const family = user.lastName ? ` ${user.lastName}` : '';
-    displayName = (given + family).trim() || null;
-  }
+if (user) {
+  displayName = user.lastName?.trim() || null;
+}
 
   const demoCars = [
     { id: 1, name: "VinFast VF e34", range: "285 km", battery: "42 kWh", image: "https://tse1.mm.bing.net/th/id/OIP.riszdhdMzFup8hCkWcLhxwHaEK?cb=12&rs=1&pid=ImgDetMain&o=7&rm=3" },
     { id: 2, name: "Tesla Model 3", range: "491 km", battery: "57.5 kWh", image: "https://tse2.mm.bing.net/th/id/OIP.aS2_N7oIhYYI5R6IiQ2TbAFrCr?cb=12&rs=1&pid=ImgDetMain&o=7&rm=3" },
     { id: 3, name: "Hyundai Kona Electric", range: "305 km", battery: "39.2 kWh", image: "https://tse3.mm.bing.net/th/id/OIP.KIInOUjtxzsg-rBBV2oIAAHaE8?cb=12&rs=1&pid=ImgDetMain&o=7&rm=3" },
   ];
+
+  const [showBooking, setShowBooking] = useState(false);
 
   return (
     <div className="min-h-screen bg-[#E9EBEE] flex flex-col items-center p-8 pt-24">
@@ -33,7 +34,6 @@ const HomePage = () => {
             ? "Chào mừng đến với hệ thống EV Battery Swapper"
             : "Bạn có thể xem các mẫu xe hỗ trợ đổi pin dưới đây hoặc đăng nhập để trải nghiệm đầy đủ"}
         </p>
-
       </div>
 
       {/* Demo cars */}
@@ -92,6 +92,9 @@ const HomePage = () => {
           )}
         </div>
       )}
+
+      {/* Modal đặt lịch đổi/thuê pin */}
+      <BookingBatteryModal open={showBooking} onClose={() => setShowBooking(false)} onBooked={() => {}} />
     </div>
   );
 };

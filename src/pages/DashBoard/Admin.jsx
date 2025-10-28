@@ -105,9 +105,11 @@ const Admin = () => {
       setLoading(true);
       setError('');
       const [batteriesData, modelsData] = await Promise.all([
-        getAllBatteries().catch(() => []),
-        getAllBatteryModels().catch(() => [])
+        getAllBatteries(1).catch(() => []),
+        getAllBatteryModels(1).catch(() => [])
       ]);
+      console.log('Batteries loaded:', batteriesData);
+      console.log('Battery models loaded:', modelsData);
       setBatteries(batteriesData);
       setBatteryModels(modelsData);
     } catch (e) {
@@ -793,6 +795,7 @@ const Admin = () => {
                     <tr className="bg-gray-100 text-gray-700">
                       <th className="p-3">Trạm</th>
                       <th className="p-3">Địa chỉ</th>
+                      <th className="p-3">Rating</th>
                       <th className="p-3">Sức chứa</th>
                       <th className="p-3">Hiện có</th>
                       <th className="p-3">Vị trí đổi pin</th>
@@ -822,6 +825,22 @@ const Admin = () => {
                           </div>
                         </td>
                         <td className="p-3">{station.address}</td>
+                        <td className="p-3">
+                          {station.averageRating ? (
+                            <div className="flex items-center gap-1">
+                              <span className="text-yellow-500">⭐</span>
+                              <span className="font-semibold">
+                                {typeof station.averageRating === 'object' && station.averageRating.rate 
+                                  ? station.averageRating.rate 
+                                  : typeof station.averageRating === 'number' 
+                                  ? station.averageRating 
+                                  : '0'}
+                              </span>
+                            </div>
+                          ) : (
+                            <span className="text-gray-400">-</span>
+                          )}
+                        </td>
                         <td className="p-3">{station.totalCapacity}</td>
                         <td className="p-3">{station.currentCapacity}</td>
                         <td className="p-3">{station.totalSwapBays}</td>
@@ -1338,8 +1357,8 @@ const Admin = () => {
                         </tr>
                       </thead>
                       <tbody className="bg-white divide-y divide-gray-200">
-                        {batteryModels.map((model) => (
-                          <tr key={model.modelId || model.batteryModelId} className="hover:bg-gray-50">
+                        {batteryModels.map((model, idx) => (
+                          <tr key={model.modelId || model.batteryModelId || model.id || `model-${idx}`} className="hover:bg-gray-50">
                             <td className="px-4 py-3 whitespace-nowrap font-mono text-sm">{model.type}</td>
                             <td className="px-4 py-3 whitespace-nowrap text-sm">{model.manufacturer}</td>
                             <td className="px-4 py-3 whitespace-nowrap text-sm">{model.chemistry}</td>
