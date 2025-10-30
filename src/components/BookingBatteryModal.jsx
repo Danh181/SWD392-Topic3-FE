@@ -261,7 +261,7 @@ const BookingScheduleStep = ({ station, model, vehicle, onBack, onBooked, onClos
       await createScheduledSwap(payload);
       
       setLoading(false);
-      Swal.fire('Thành công', 'Đã đặt lịch đổi/thuê pin! Vui lòng chờ nhân viên xác nhận.', 'success');
+      Swal.fire('Thành công', 'Đã đặt lịch đổi/thuê pin! Vui lòng chờ nhân viên xác nhận. Mời bạn vào trang cá nhân -> đơn hàng của tôi để xem chi tiết', 'success');
       onBooked();
       onClose();
     } catch (err) {

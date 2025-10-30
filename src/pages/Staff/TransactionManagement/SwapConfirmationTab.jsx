@@ -227,7 +227,6 @@ const SwapConfirmationTab = ({ onUpdate }) => {
                 <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
                   <p className="text-sm font-medium text-gray-900 mb-2">Thông tin đơn</p>
                   <p className="text-sm text-gray-700">Mã: #{selectedSwap.code || selectedSwap.transactionId?.slice(0, 8)}</p>
-                  <p className="text-sm text-gray-700">Loại pin cần: {selectedSwap.vehicleBatteryType || 'N/A'}</p>
                   <p className="text-sm text-gray-700">Số lượng: {selectedSwap.vehicleBatteryCapacity || 1}</p>
                 </div>
 
@@ -248,7 +247,6 @@ const SwapConfirmationTab = ({ onUpdate }) => {
                         <div>
                           <p className="font-medium text-gray-900">{battery.model}</p>
                           <p className="text-sm text-gray-600">SN: {battery.serialNumber}</p>
-                          <p className="text-sm text-gray-600">SoH: {battery.soh}%</p>
                         </div>
                         {selectedBatteries.includes(battery.batteryId || battery.id) && (
                           <svg className="w-6 h-6 text-green-600" fill="currentColor" viewBox="0 0 20 20">

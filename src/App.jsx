@@ -14,6 +14,7 @@ import StaffManagementForStaff from './pages/Staff/StaffManagement/StaffManageme
 import BatteryManagement from './pages/Staff/BatteryManagement/BatteryManagement';
 import BatteryMonitoring from './pages/Staff/BatteryMonitoring/BatteryMonitoring';
 import TransactionManagement from './pages/Staff/TransactionManagement/TransactionManagement';
+import MyOrders from './pages/Driver/MyOrders/MyOrders';
 
 function App() {
   return (
@@ -37,6 +38,9 @@ function App() {
         {/* Profile routes */}
         <Route path="/profile" element={<ProfileUser />} />
         <Route path="/profile/edit" element={<EditProfile />} />
+
+        {/* Driver routes */}
+        <Route path="/driver/orders" element={<MyOrders />} />
 
         {/* Fallback route */}
         <Route path="*" element={<HomePage />} />
