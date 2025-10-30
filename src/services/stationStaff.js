@@ -1,11 +1,12 @@
 import API from './auth';
 
 /**
- * Get current staff's station assignment info
+ * DEPRECATED: Backend endpoint does not exist
+ * Returns null to prevent API errors
  */
 export async function getMyStaffInfo() {
-  const res = await API.get('/api/station-staff/me');
-  return res?.data?.data ?? null;
+  console.warn('getMyStaffInfo is deprecated - endpoint /api/station-staff/me does not exist on backend');
+  return null;
 }
 
 /**

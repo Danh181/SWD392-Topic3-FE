@@ -416,7 +416,7 @@ const Admin = () => {
                 <p className="text-3xl font-bold text-[#0028b8]">{operationalStationCount}</p>
               </div>
               <div className="bg-white p-6 rounded-xl shadow">
-                <h3 className="text-lg font-semibold">Giao dịch hôm nay</h3>
+                <h3 className="text-lg font-semibold">Tổng giao dịch</h3>
                 <p className="text-3xl font-bold text-[#0028b8]">412</p>
               </div>
             </div>

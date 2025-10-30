@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { getAllUnconfirmedSwaps, confirmScheduledSwap, getSwapStatusText } from '../../../services/swapTransaction';
-import { getAllBatteries } from '../../../services/battery';
+import { getAllBatteries, getBatteriesByStation } from '../../../services/battery';
 import { getVehiclesByDriverId } from '../../../services/vehicle';
 import { getStationById } from '../../../services/station';
 import { getUsers } from '../../../services/admin';
+import { getMyStaffInfo } from '../../../services/stationStaff';
 
 const SwapConfirmationTab = ({ onUpdate }) => {
   const [swaps, setSwaps] = useState([]);
@@ -18,13 +19,14 @@ const SwapConfirmationTab = ({ onUpdate }) => {
     try {
       setLoading(true);
       setError('');
-      const [swapsData, batteriesData, usersData] = await Promise.all([
+      const [swapsData, usersData, staffInfoData] = await Promise.all([
         getAllUnconfirmedSwaps(),
-        getAllBatteries(1, 100), // Get first 100 batteries
-        getUsers({ page: 1, size: 100 })
+        getUsers({ page: 1, size: 100 }),
+        getMyStaffInfo().catch(() => null)
       ]);
       
       console.log('Raw swap data from BE:', swapsData[0]); // Debug: check what BE returns
+      console.log('Staff assignment info:', staffInfoData);
       console.log('All swaps statuses:', swapsData.map(swap => ({
         id: swap.transactionId || swap.id,
         code: swap.code,
@@ -39,6 +41,20 @@ const SwapConfirmationTab = ({ onUpdate }) => {
       });
       
       console.log('Filtered unconfirmed swaps:', unconfirmedSwaps.length, 'out of', swapsData.length);
+      
+      // Get station ID from staff assignment info or from first swap
+      let stationId = null;
+      if (staffInfoData?.station?.id || staffInfoData?.station?.stationId) {
+        stationId = staffInfoData.station.id || staffInfoData.station.stationId;
+        console.log('Loading batteries for staff station:', stationId, '(', staffInfoData.station.name, ')');
+      } else if (unconfirmedSwaps.length > 0) {
+        stationId = unconfirmedSwaps[0].stationId;
+        console.log('Loading batteries for station from swap data:', stationId);
+      }
+      
+      // Load batteries for this station only
+      const batteriesData = stationId ? await getBatteriesByStation(stationId) : [];
+      console.log('Station batteries loaded:', batteriesData.length, 'for station:', stationId);
       
       // Enrich swaps with driver info and fetch vehicle/station
       const enrichedSwaps = await Promise.all(
