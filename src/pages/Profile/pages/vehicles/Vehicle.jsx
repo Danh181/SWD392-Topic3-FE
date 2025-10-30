@@ -268,7 +268,7 @@ const Vehicle = () => {
                     <td className="p-2">{v.licensePlate}</td>
                     <td className="p-2">{v.batteryType}</td>
                     <td className="p-2">{v.batteryCapacity}</td>
-                    <td className="p-2">{v.isActive ? 'Hoạt động' : 'Ngưng hoạt động'}</td>
+                    <td className="p-2">{v.isActive ? 'Ngưng hoạt động' : ' Hoạt động'}</td>
                     <td className="p-2">
                       <div className="flex gap-2">
                         <button onClick={() => handleEdit(v)} className="px-2 py-1 text-sm rounded bg-blue-50 text-blue-600 hover:bg-blue-100">Sửa</button>
