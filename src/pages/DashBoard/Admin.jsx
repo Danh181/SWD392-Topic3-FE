@@ -14,7 +14,7 @@ import API, { logout as apiLogout, clearTokens } from '../../services/auth';
 import { getUsers, getUsersByRole } from '../../services/admin';
 import { resolveAssetUrl } from '../../services/user';
 import { getAllStations, createStation, updateStation, changeStationStatus } from '../../services/station';
-import { getAllBatteries, getAllBatteryModels, defineBatteryModel, updateBatteryModel, getMonitoringStats, getBatteryStateById } from '../../services/battery';
+import { getAllBatteries, getAllBatteriesComplete, getAllBatteryModels, getAllBatteryModelsComplete, defineBatteryModel, updateBatteryModel, getMonitoringStats, getBatteryStateById } from '../../services/battery';
 import BatteryDetailModal from '../../components/BatteryDetailModal';
 import { recordSoHDataPoint } from '../../services/sohTracking';
 
@@ -36,6 +36,13 @@ const Admin = () => {
   const [monitoringStats, setMonitoringStats] = useState(null);
   const [statsLoading, setStatsLoading] = useState(false);
   const [statsError, setStatsError] = useState('');
+  
+  // Battery pagination states
+  const [batteryCurrentPage, setBatteryCurrentPage] = useState(1);
+  const [batteryHasMore, setBatteryHasMore] = useState(true);
+  const [modelCurrentPage, setModelCurrentPage] = useState(1);
+  const [modelHasMore, setModelHasMore] = useState(true);
+  
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [selectedRole, setSelectedRole] = useState('ALL');
@@ -100,24 +107,54 @@ const Admin = () => {
     }
   };
 
-  const loadBatteries = async () => {
+  const loadBatteries = async (page = 1) => {
     try {
       setLoading(true);
       setError('');
-      const [batteriesData, modelsData] = await Promise.all([
-        getAllBatteries(1).catch(() => []),
-        getAllBatteryModels(1).catch(() => [])
-      ]);
-      console.log('Batteries loaded:', batteriesData);
-      console.log('Battery models loaded:', modelsData);
+      // Load specific page of batteries (backend PAGE_SIZE=10)
+      const batteriesData = await getAllBatteries(page);
+      console.log(`Batteries page ${page} loaded:`, batteriesData);
       setBatteries(batteriesData);
-      setBatteryModels(modelsData);
+      
+      // Check if there are more pages (if we got less than 10 items, it's the last page)
+      setBatteryHasMore(batteriesData.length === 10);
+      setBatteryCurrentPage(page);
     } catch (e) {
       setError(e?.message || 'Không thể tải danh sách pin');
       console.error('Failed to load batteries:', e);
     } finally {
       setLoading(false);
     }
+  };
+
+  const loadBatteryModels = async (page = 1) => {
+    try {
+      setLoading(true);
+      setError('');
+      // Load specific page of models (backend PAGE_SIZE=10)
+      const modelsData = await getAllBatteryModels(page);
+      console.log(`Battery models page ${page} loaded:`, modelsData);
+      setBatteryModels(modelsData);
+      
+      // Check if there are more pages
+      setModelHasMore(modelsData.length === 10);
+      setModelCurrentPage(page);
+    } catch (e) {
+      setError(e?.message || 'Không thể tải danh sách models');
+      console.error('Failed to load battery models:', e);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Load both batteries and models when entering battery management
+  const loadBatteryData = async () => {
+    setBatteryCurrentPage(1);
+    setModelCurrentPage(1);
+    await Promise.all([
+      loadBatteries(1),
+      loadBatteryModels(1)
+    ]);
   };
 
   const loadMonitoringStats = async () => {
@@ -340,7 +377,7 @@ const Admin = () => {
             </li>
             <li>
               <button
-                onClick={() => { setActiveView('batteries'); loadBatteries(); try{sessionStorage.setItem(STORAGE_KEY,'batteries');}catch{} navigate('/dashboard/admin?view=batteries', { replace: true }); }}
+                onClick={() => { setActiveView('batteries'); loadBatteryData(); try{sessionStorage.setItem(STORAGE_KEY,'batteries');}catch{} navigate('/dashboard/admin?view=batteries', { replace: true }); }}
                 className="flex items-center gap-3 p-2 rounded hover:bg-[#335cff] w-full text-left"
               >
                 <FileBarChart /> {isSidebarOpen && "Pin"}
@@ -1223,6 +1260,67 @@ const Admin = () => {
                     </table>
                   </div>
                 )}
+                
+                {/* Battery Pagination */}
+                {!loading && batteries.length > 0 && (
+                  <div className="flex items-center justify-between mt-6 px-4">
+                    <div className="text-sm text-gray-500">
+                      Trang {batteryCurrentPage} - Hiển thị {batteries.length} pin
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <button
+                        onClick={() => loadBatteries(batteryCurrentPage - 1)}
+                        disabled={batteryCurrentPage <= 1}
+                        className="px-3 py-1 text-sm border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        ← Trước
+                      </button>
+                      
+                      {/* Show page numbers */}
+                      {batteryCurrentPage > 2 && (
+                        <>
+                          <button
+                            onClick={() => loadBatteries(1)}
+                            className="px-3 py-1 text-sm border border-gray-300 rounded hover:bg-gray-50"
+                          >
+                            1
+                          </button>
+                          {batteryCurrentPage > 3 && <span className="px-2 text-gray-400">...</span>}
+                        </>
+                      )}
+                      
+                      {batteryCurrentPage > 1 && (
+                        <button
+                          onClick={() => loadBatteries(batteryCurrentPage - 1)}
+                          className="px-3 py-1 text-sm border border-gray-300 rounded hover:bg-gray-50"
+                        >
+                          {batteryCurrentPage - 1}
+                        </button>
+                      )}
+                      
+                      <span className="px-3 py-1 text-sm bg-[#0028b8] text-white rounded font-medium">
+                        {batteryCurrentPage}
+                      </span>
+                      
+                      {batteryHasMore && (
+                        <button
+                          onClick={() => loadBatteries(batteryCurrentPage + 1)}
+                          className="px-3 py-1 text-sm border border-gray-300 rounded hover:bg-gray-50"
+                        >
+                          {batteryCurrentPage + 1}
+                        </button>
+                      )}
+                      
+                      <button
+                        onClick={() => loadBatteries(batteryCurrentPage + 1)}
+                        disabled={!batteryHasMore}
+                        className="px-3 py-1 text-sm border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        Tiếp →
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
 
@@ -1308,7 +1406,7 @@ const Admin = () => {
 
                           return defineBatteryModel(payload)
                             .then(() => {
-                              loadBatteries();
+                              loadBatteryModels(modelCurrentPage);
                               return true;
                             })
                             .catch(error => {
@@ -1446,7 +1544,7 @@ const Admin = () => {
 
                                       return updateBatteryModel(modelId, payload)
                                         .then(() => {
-                                          loadBatteries();
+                                          loadBatteryModels(modelCurrentPage);
                                           return true;
                                         })
                                         .catch(error => {
@@ -1471,6 +1569,67 @@ const Admin = () => {
                         ))}
                       </tbody>
                     </table>
+                  </div>
+                )}
+                
+                {/* Battery Models Pagination */}
+                {!loading && batteryModels.length > 0 && (
+                  <div className="flex items-center justify-between mt-6 px-4">
+                    <div className="text-sm text-gray-500">
+                      Trang {modelCurrentPage} - Hiển thị {batteryModels.length} models
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <button
+                        onClick={() => loadBatteryModels(modelCurrentPage - 1)}
+                        disabled={modelCurrentPage <= 1}
+                        className="px-3 py-1 text-sm border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        ← Trước
+                      </button>
+                      
+                      {/* Show page numbers */}
+                      {modelCurrentPage > 2 && (
+                        <>
+                          <button
+                            onClick={() => loadBatteryModels(1)}
+                            className="px-3 py-1 text-sm border border-gray-300 rounded hover:bg-gray-50"
+                          >
+                            1
+                          </button>
+                          {modelCurrentPage > 3 && <span className="px-2 text-gray-400">...</span>}
+                        </>
+                      )}
+                      
+                      {modelCurrentPage > 1 && (
+                        <button
+                          onClick={() => loadBatteryModels(modelCurrentPage - 1)}
+                          className="px-3 py-1 text-sm border border-gray-300 rounded hover:bg-gray-50"
+                        >
+                          {modelCurrentPage - 1}
+                        </button>
+                      )}
+                      
+                      <span className="px-3 py-1 text-sm bg-[#0028b8] text-white rounded font-medium">
+                        {modelCurrentPage}
+                      </span>
+                      
+                      {modelHasMore && (
+                        <button
+                          onClick={() => loadBatteryModels(modelCurrentPage + 1)}
+                          className="px-3 py-1 text-sm border border-gray-300 rounded hover:bg-gray-50"
+                        >
+                          {modelCurrentPage + 1}
+                        </button>
+                      )}
+                      
+                      <button
+                        onClick={() => loadBatteryModels(modelCurrentPage + 1)}
+                        disabled={!modelHasMore}
+                        className="px-3 py-1 text-sm border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        Tiếp →
+                      </button>
+                    </div>
                   </div>
                 )}
               </div>

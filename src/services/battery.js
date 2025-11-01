@@ -11,65 +11,47 @@ import API from './auth';
  * Get all batteries (paginated)
  * Role: ADMIN
  * @param {number} page - Page index (1-based for backend)
- * @param {number} size - Page size
+ * Note: Backend uses fixed page size of 10 (LIST_SIZE constant), size parameter is ignored
  */
-export async function getAllBatteries(page = 1, size = 20) {
-  const res = await API.get('/api/battery/all', { params: { page, size } });
+export async function getAllBatteries(page = 1) {
+  const res = await API.get('/api/battery/all', { params: { page } });
   const data = res?.data?.data;
-  // Support both array and paginated { content: [] } shapes
+  // Backend returns array directly (not wrapped in pagination object)
   if (Array.isArray(data)) return data;
-  if (data?.content && Array.isArray(data.content)) return data.content;
-  if (data?.items && Array.isArray(data.items)) return data.items;
   return [];
 }
 
 /**
  * Get ALL batteries across all pages (for admin dashboard)
+ * Backend uses PAGE_SIZE = 10, so we need to fetch multiple pages
  * Role: ADMIN
  */
 export async function getAllBatteriesComplete() {
   try {
-    // First, get the first page to check total count/pages
-    const firstPageRes = await API.get('/api/battery/all', { params: { page: 1, size: 100 } });
-    const firstPageData = firstPageRes?.data?.data;
+    const allBatteries = [];
+    let currentPage = 1;
+    let hasMore = true;
     
-    // If it's just an array, return it
-    if (Array.isArray(firstPageData)) {
-      return firstPageData;
-    }
-    
-    // If it's paginated, check if we need more pages
-    if (firstPageData?.content && Array.isArray(firstPageData.content)) {
-      const { content, totalPages = 1, totalElements = content.length } = firstPageData;
+    while (hasMore) {
+      const batteries = await getAllBatteries(currentPage);
       
-      // If only one page or got all elements, return first page content
-      if (totalPages <= 1 || content.length >= totalElements) {
-        return content;
-      }
-      
-      // Otherwise, get all pages
-      const allBatteries = [...content];
-      const promises = [];
-      
-      for (let page = 2; page <= totalPages; page++) {
-        promises.push(
-          API.get('/api/battery/all', { params: { page, size: 100 } })
-            .then(res => res?.data?.data?.content || [])
-            .catch(() => [])
-        );
-      }
-      
-      const additionalPages = await Promise.all(promises);
-      additionalPages.forEach(pageContent => {
-        if (Array.isArray(pageContent)) {
-          allBatteries.push(...pageContent);
+      if (batteries.length === 0) {
+        // No more batteries
+        hasMore = false;
+      } else {
+        allBatteries.push(...batteries);
+        
+        // If we got less than 10 batteries (LIST_SIZE), we've reached the end
+        if (batteries.length < 10) {
+          hasMore = false;
+        } else {
+          currentPage++;
         }
-      });
-      
-      return allBatteries;
+      }
     }
     
-    return [];
+    console.log(`Loaded ${allBatteries.length} batteries from ${currentPage} pages`);
+    return allBatteries;
   } catch (error) {
     console.error('Failed to get all batteries:', error);
     return [];
@@ -114,16 +96,50 @@ export async function defineBatteryModel(payload) {
  * Get all battery models (paginated)
  * Role: Public (no auth required based on BE @GetMapping without @PreAuthorize)
  * @param {number} page - Page index (1-based for backend)
- * @param {number} size - Page size
+ * Note: Backend uses fixed page size of 10 (LIST_SIZE constant), size parameter is ignored
  */
-export async function getAllBatteryModels(page = 1, size = 20) {
-  const res = await API.get('/api/battery/model', { params: { page, size } });
+export async function getAllBatteryModels(page = 1) {
+  const res = await API.get('/api/battery/model', { params: { page } });
   const data = res?.data?.data;
-  // Support both array and paginated { content: [] } shapes
+  // Backend returns array directly (not wrapped in pagination object)
   if (Array.isArray(data)) return data;
-  if (data?.content && Array.isArray(data.content)) return data.content;
-  if (data?.items && Array.isArray(data.items)) return data.items;
   return [];
+}
+
+/**
+ * Get ALL battery models across all pages
+ * Backend uses PAGE_SIZE = 10, so we need to fetch multiple pages
+ */
+export async function getAllBatteryModelsComplete() {
+  try {
+    const allModels = [];
+    let currentPage = 1;
+    let hasMore = true;
+    
+    while (hasMore) {
+      const models = await getAllBatteryModels(currentPage);
+      
+      if (models.length === 0) {
+        // No more models
+        hasMore = false;
+      } else {
+        allModels.push(...models);
+        
+        // If we got less than 10 models (LIST_SIZE), we've reached the end
+        if (models.length < 10) {
+          hasMore = false;
+        } else {
+          currentPage++;
+        }
+      }
+    }
+    
+    console.log(`Loaded ${allModels.length} battery models from ${currentPage} pages`);
+    return allModels;
+  } catch (error) {
+    console.error('Failed to get all battery models:', error);
+    return [];
+  }
 }
 
 /**
