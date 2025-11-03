@@ -13,38 +13,74 @@ export default function PaymentReturn() {
         const responseCode = searchParams.get('vnp_ResponseCode');
         const txnRef = searchParams.get('vnp_TxnRef');
         
-        console.log('VNPay Return:', { responseCode, txnRef });
+        console.log('🔍 VNPay Return:', { 
+          responseCode, 
+          txnRef,
+          fullURL: window.location.href,
+          search: window.location.search 
+        });
 
-        // Extract transaction ID from txnRef (format: uuid-timestamp)
+        // Extract transaction ID from txnRef or sessionStorage
         let transactionId = sessionStorage.getItem('pendingPaymentTransaction');
         
         if (txnRef && txnRef.length >= 36) {
           transactionId = txnRef.substring(0, 36);
         }
 
-        // Check if payment was successful based on response code
-        if (responseCode === '00') {
-          // Success - navigate to success page
+        // Case 1: Has VNPay parameters (direct callback with params)
+        if (responseCode) {
+          console.log('✅ Has VNPay params - checking response code');
+          
+          if (responseCode === '00') {
+            // Success
+            const paymentData = {
+              transactionId,
+              responseCode,
+              success: true,
+              message: 'Thanh toán thành công'
+            };
+            
+            sessionStorage.setItem('paymentResult', JSON.stringify(paymentData));
+            navigate('/payment/success', { state: paymentData, replace: true });
+          } else {
+            // Failure
+            const paymentData = {
+              transactionId,
+              responseCode,
+              success: false,
+              message: getErrorMessage(responseCode)
+            };
+            
+            navigate('/payment/failure', { state: paymentData, replace: true });
+          }
+        } 
+        // Case 2: No VNPay parameters (backend already processed via /vnpay-ipn)
+        else if (transactionId) {
+          console.log('ℹ️ No VNPay params but has transaction ID - assuming backend processed');
+          console.log('📝 Backend processes payment via /vnpay-ipn, so we assume success');
+          
+          // Backend redirect without params means payment was processed
+          // Navigate to success (backend only redirects on success)
           const paymentData = {
             transactionId,
-            responseCode,
             success: true,
-            message: 'Thanh toán thành công'
+            message: 'Thanh toán thành công',
+            backendProcessed: true
           };
           
-          // Store for success page
           sessionStorage.setItem('paymentResult', JSON.stringify(paymentData));
           navigate('/payment/success', { state: paymentData, replace: true });
-        } else {
-          // Failure - navigate to failure page
-          const paymentData = {
-            transactionId,
-            responseCode,
-            success: false,
-            message: getErrorMessage(responseCode)
-          };
-          
-          navigate('/payment/failure', { state: paymentData, replace: true });
+        }
+        // Case 3: No params and no transaction ID
+        else {
+          console.warn('⚠️ No VNPay params and no transaction ID');
+          navigate('/payment/failure', { 
+            state: { 
+              message: 'Không tìm thấy thông tin thanh toán',
+              noData: true
+            },
+            replace: true
+          });
         }
       } catch (error) {
         console.error('Error processing payment return:', error);
