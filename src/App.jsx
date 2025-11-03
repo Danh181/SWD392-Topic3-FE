@@ -52,6 +52,7 @@ function App() {
         <Route path="/driver/my-orders" element={<Layout><MyOrders /></Layout>} />
 
         {/* Payment pages - minimal layout */}
+        <Route path="/vnpay-return" element={<Layout showHeader={false}><PaymentReturn /></Layout>} />
         <Route path="/payment/return" element={<Layout showHeader={false}><PaymentReturn /></Layout>} />
         <Route path="/payment/success" element={<Layout showHeader={false}><PaymentSuccess /></Layout>} />
         <Route path="/payment/failure" element={<Layout showHeader={false}><PaymentFailure /></Layout>} />
