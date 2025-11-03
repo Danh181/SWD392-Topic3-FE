@@ -14,8 +14,9 @@ export default function PaymentReturn() {
         console.log('🔍 Search Params:', window.location.search);
         console.log('🔍 All URL params:', Object.fromEntries(searchParams.entries()));
         
-        // Check if we're coming from backend domain (no params scenario)
-        const isBackendRedirect = currentUrl.includes('swd-392-topic3-fe.vercel.app/payment/return') && 
+        // Check if we're coming from backend domain or localhost redirect
+        const isBackendRedirect = (currentUrl.includes('swd-392-topic3-fe.vercel.app/payment/return') || 
+                                  currentUrl.includes('localhost:5173/payment/return')) && 
                                  !searchParams.toString();
         
         if (isBackendRedirect) {
