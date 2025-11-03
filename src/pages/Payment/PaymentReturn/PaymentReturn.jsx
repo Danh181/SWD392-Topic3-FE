@@ -1,14 +1,19 @@
 import React, { useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { parseVNPayReturn, parseVNPayFromURL } from '../../../services/payment';
+import { useAuthPreservation } from '../../../hooks/useAuthPreservation';
 
 export default function PaymentReturn() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+  const { preserveToken, restoreToken } = useAuthPreservation();
 
   useEffect(() => {
     const handlePaymentReturn = () => {
       try {
+        // Preserve auth token at the start
+        preserveToken();
+        
         const currentUrl = window.location.href;
         console.log('🔍 Current URL:', currentUrl);
         console.log('🔍 Search Params:', window.location.search);
@@ -37,6 +42,10 @@ export default function PaymentReturn() {
                            window.location.search.includes('vnp_Amount');
         
         console.log('🔍 Params detection:', { hasVnpayParams, urlHasParams });
+        
+        // EMERGENCY DIRECT CHECK: If URL contains success params but searchParams fails
+        const urlContainsSuccess = window.location.search.includes('vnp_ResponseCode=00');
+        console.log('🚨 Emergency check - URL contains success code:', urlContainsSuccess);
         
         if (hasVnpayParams || urlHasParams) {
           console.log('✅ Direct VNPay callback with params - parsing normally');
@@ -70,11 +79,15 @@ export default function PaymentReturn() {
               
               // If response code is 00 (success), navigate to success page
               if (responseCode === '00') {
+                // Restore auth token before navigation
+                restoreToken();
+                
                 const storedData = {
                   transactionId,
                   orderCode,
                   hasVnpayCallback: true,
-                  responseCode
+                  responseCode,
+                  emergencyMode: true
                 };
                 sessionStorage.setItem('paymentResult', JSON.stringify(storedData));
                 navigate('/payment/success', { state: storedData, replace: true });
@@ -94,6 +107,9 @@ export default function PaymentReturn() {
           
           // Navigate to appropriate page based on payment result
           if (result.success) {
+            // Restore auth token before navigation
+            restoreToken();
+            
             const successUrl = `/payment/success?${searchParams.toString()}`;
             navigate(successUrl, { replace: true });
           } else {
@@ -120,6 +136,9 @@ export default function PaymentReturn() {
           };
           
           console.log('📦 Assuming payment success:', successResult);
+          
+          // Restore auth token before navigation
+          restoreToken();
           
           // Navigate to success page with mock data
           navigate('/payment/success', { 
