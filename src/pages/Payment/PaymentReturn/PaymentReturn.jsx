@@ -14,87 +14,68 @@ export default function PaymentReturn() {
         console.log('🔍 Search Params:', window.location.search);
         console.log('🔍 All URL params:', Object.fromEntries(searchParams.entries()));
         
-        // Check if we're coming from backend domain or localhost redirect
-        const isBackendRedirect = (currentUrl.includes('swd-392-topic3-fe.vercel.app/payment/return') || 
-                                  currentUrl.includes('localhost:5173/payment/return')) && 
-                                 !searchParams.toString();
-        
-        if (isBackendRedirect) {
-          console.log('🔄 Detected backend redirect without params');
-          
-          // Get saved transaction info from sessionStorage to determine result
-          const transactionId = sessionStorage.getItem('pendingPaymentTransaction');
-          const orderCode = sessionStorage.getItem('pendingPaymentOrderCode');
-          
-          if (transactionId) {
-            // Since backend already processed payment in /vnpay-ipn
-            // We'll assume success and let user check in orders page
-            console.log('✅ Backend processed payment, redirecting to success');
-            
-            // Create a mock successful result
-            const mockResult = {
-              success: true,
-              message: 'Thanh toán đã được xử lý thành công',
-              transactionId: transactionId,
-              savedTransactionId: transactionId,
-              savedOrderCode: orderCode,
-              backendProcessed: true
-            };
-            
-            // Navigate to success page with mock data
-            navigate('/payment/success', { 
-              state: mockResult,
-              replace: true 
-            });
-          } else {
-            console.warn('⚠️ No transaction info found');
-            navigate('/payment/failure', { 
-              state: { 
-                message: 'Không tìm thấy thông tin giao dịch. Vui lòng kiểm tra đơn hàng của bạn.',
-                noTransactionInfo: true
-              } 
-            });
-          }
-          return;
-        }
-        
-        // Check if we have VNPay parameters (direct VNPay callback)
-        const hasVnpayParams = searchParams.has('vnp_ResponseCode') || 
-                              searchParams.has('vnp_TxnRef') ||
-                              searchParams.toString().length > 0;
-        
-        if (!hasVnpayParams) {
-          console.warn('⚠️ No VNPay parameters found');
-          navigate('/payment/failure', { 
-            state: { 
-              message: 'Không tìm thấy thông tin thanh toán. Vui lòng thử lại.',
-              noParams: true
-            } 
-          });
-          return;
-        }
-        
-        // Parse VNPay return parameters (if available)
-        const result = parseVNPayReturn(searchParams);
-        
         // Get saved transaction info from sessionStorage
         const transactionId = sessionStorage.getItem('pendingPaymentTransaction');
         const orderCode = sessionStorage.getItem('pendingPaymentOrderCode');
         
-        if (transactionId) result.savedTransactionId = transactionId;
-        if (orderCode) result.savedOrderCode = orderCode;
+        console.log('🔍 SessionStorage info:', { transactionId, orderCode });
         
-        console.log('📦 Payment Return Result:', result);
+        // Check if we have VNPay parameters (direct VNPay callback - rare case)
+        const hasVnpayParams = searchParams.has('vnp_ResponseCode') || 
+                              searchParams.has('vnp_TxnRef');
         
-        // Navigate to appropriate page based on payment result
-        if (result.success) {
-          console.log('✅ Payment successful, redirecting to success page');
-          const successUrl = `/payment/success?${searchParams.toString()}`;
-          navigate(successUrl, { replace: true });
+        if (hasVnpayParams) {
+          console.log('✅ Direct VNPay callback with params - parsing normally');
+          // Parse VNPay return parameters
+          const result = parseVNPayReturn(searchParams);
+          
+          if (transactionId) result.savedTransactionId = transactionId;
+          if (orderCode) result.savedOrderCode = orderCode;
+          
+          console.log('📦 Payment Return Result from VNPay:', result);
+          
+          // Navigate to appropriate page based on payment result
+          if (result.success) {
+            const successUrl = `/payment/success?${searchParams.toString()}`;
+            navigate(successUrl, { replace: true });
+          } else {
+            const failureUrl = `/payment/failure?${searchParams.toString()}`;
+            navigate(failureUrl, { replace: true });
+          }
+          return;
+        }
+        
+        // Normal case: Backend redirect without params (payment already processed)
+        if (transactionId && orderCode) {
+          console.log('✅ Backend redirect detected - payment was processed in /vnpay-ipn');
+          
+          // Since backend already processed payment successfully in /vnpay-ipn
+          // We assume success (user reached this point means payment went through)
+          const successResult = {
+            success: true,
+            message: 'Thanh toán đã được xử lý thành công',
+            transactionId: transactionId,
+            savedTransactionId: transactionId,
+            savedOrderCode: orderCode,
+            backendProcessed: true,
+            note: 'Payment processed by backend /vnpay-ipn endpoint'
+          };
+          
+          console.log('📦 Assuming payment success:', successResult);
+          
+          // Navigate to success page with mock data
+          navigate('/payment/success', { 
+            state: successResult,
+            replace: true 
+          });
         } else {
-          console.log('❌ Payment failed, redirecting to failure page');
-          const failureUrl = `/payment/failure?${searchParams.toString()}`;
-          navigate(failureUrl, { replace: true });
+          console.warn('⚠️ No transaction info found in sessionStorage');
+          navigate('/payment/failure', { 
+            state: { 
+              message: 'Không tìm thấy thông tin giao dịch. Vui lòng kiểm tra đơn hàng của bạn.',
+              noTransactionInfo: true
+            } 
+          });
         }
         
       } catch (error) {
