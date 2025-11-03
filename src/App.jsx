@@ -24,7 +24,7 @@ function App() {
       <Routes>
         {/* Public pages with Layout (Header + Footer) */}
         <Route path="/mainpage" element={<Layout><HomePage /></Layout>} />
-        <Route path="/stations" element={<Layout><Stations /></Layout>} />
+        <Route path="/stations" element={<Layout showHeader={false}><Stations /></Layout>} />
         <Route path="/stations/:id" element={<Layout><PublicStationDetail /></Layout>} />
         
         {/* Auth pages - no header/footer */}
@@ -42,8 +42,8 @@ function App() {
         <Route path="/staff/manage-staff" element={<StaffManagementForStaff />} />
 
         {/* User pages with Layout */}
-        <Route path="/profile" element={<Layout><ProfileUser /></Layout>} />
-        <Route path="/profile/edit" element={<Layout><EditProfile /></Layout>} />
+        <Route path="/profile" element={<Layout showHeader={false}><ProfileUser /></Layout>} />
+        <Route path="/profile/edit" element={<Layout showHeader={false}><EditProfile /></Layout>} />
 
         {/* Driver pages with Layout */}
         <Route path="/driver/orders" element={<Layout><MyOrders /></Layout>} />
