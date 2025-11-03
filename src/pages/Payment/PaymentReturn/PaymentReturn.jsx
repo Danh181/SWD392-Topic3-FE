@@ -1,11 +1,10 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { parseVNPayReturn } from '../../../services/payment';
 
 export default function PaymentReturn() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const [paymentResult, setPaymentResult] = useState(null);
 
   useEffect(() => {
     const handlePaymentReturn = async () => {
@@ -25,11 +24,22 @@ export default function PaymentReturn() {
           // Check if we have VNPay params
           if (urlParams.has('vnp_ResponseCode') || urlParams.has('vnp_TxnRef')) {
             const frontendBase = currentUrl.includes('czf23bx8-8080.asse.devtunnels.ms') 
-              ? 'https://czf23bx8-8080.asse.devtunnels.ms:5173'
+              ? 'https://swd-392-topic3-fe.vercel.app'
               : 'http://localhost:5173';
               
             const frontendUrl = frontendBase + '/payment/return?' + urlParams.toString();
             console.log('🚀 Redirecting to frontend with params:', frontendUrl);
+            
+            // Preserve authentication state during redirect
+            const accessToken = localStorage.getItem('accessToken');
+            const refreshToken = localStorage.getItem('refreshToken');
+            const user = localStorage.getItem('user');
+            
+            // Store temporarily in sessionStorage to survive redirect
+            if (accessToken) sessionStorage.setItem('temp_accessToken', accessToken);
+            if (refreshToken) sessionStorage.setItem('temp_refreshToken', refreshToken);
+            if (user) sessionStorage.setItem('temp_user', user);
+            
             window.location.href = frontendUrl;
             return;
           }
@@ -46,7 +56,7 @@ export default function PaymentReturn() {
                 
                 // Fix redirect URL if it's pointing to localhost but we're on public domain
                 if (redirectUrl.includes('localhost:5173') && currentUrl.includes('czf23bx8-8080.asse.devtunnels.ms')) {
-                  redirectUrl = redirectUrl.replace('http://localhost:5173/mainpage/HomePage', 'https://czf23bx8-8080.asse.devtunnels.ms:5173');
+                  redirectUrl = redirectUrl.replace('http://localhost:5173/mainpage/HomePage', 'https://swd-392-topic3-fe.vercel.app');
                 }
                 
                 console.log('🚀 Found redirect URL in content:', redirectUrl);
@@ -55,19 +65,42 @@ export default function PaymentReturn() {
               }
             }
             
-            // If no redirect found, show error
+            // If no redirect found, redirect to failure page
             console.error('❌ No redirect URL found in backend response');
-            setPaymentResult({
-              success: false,
-              message: 'Lỗi xử lý kết quả thanh toán. Vui lòng liên hệ hỗ trợ.'
+            navigate('/payment/failure', { 
+              state: { 
+                message: 'Lỗi xử lý kết quả thanh toán. Vui lòng liên hệ hỗ trợ.' 
+              } 
             });
           }, 500);
           
           return;
         }
 
-        // Normal frontend processing when on localhost:5173
+        // Normal frontend processing when on correct domain
         console.log('✅ Processing payment return on frontend domain');
+        
+        // Restore authentication state if available
+        const tempAccessToken = sessionStorage.getItem('temp_accessToken');
+        const tempRefreshToken = sessionStorage.getItem('temp_refreshToken');
+        const tempUser = sessionStorage.getItem('temp_user');
+        
+        if (tempAccessToken && !localStorage.getItem('accessToken')) {
+          console.log('🔄 Restoring authentication state from session storage');
+          localStorage.setItem('accessToken', tempAccessToken);
+          localStorage.setItem('refreshToken', tempRefreshToken || '');
+          localStorage.setItem('user', tempUser || '');
+          
+          // Clean up temp storage
+          sessionStorage.removeItem('temp_accessToken');
+          sessionStorage.removeItem('temp_refreshToken');
+          sessionStorage.removeItem('temp_user');
+        }
+        
+        // Debug URL params
+        console.log('🔍 Search Params from URL:', window.location.search);
+        console.log('🔍 All URL params:', Object.fromEntries(searchParams.entries()));
+        
         const result = parseVNPayReturn(searchParams);
         
         // Get saved transaction info from sessionStorage
@@ -78,138 +111,37 @@ export default function PaymentReturn() {
         if (orderCode) result.savedOrderCode = orderCode;
         
         console.log('📦 Payment Return Result:', result);
-        setPaymentResult(result);
         
-        // Clear sessionStorage after getting values
+        // Navigate to appropriate page based on payment result
         if (result.success) {
-          sessionStorage.removeItem('pendingPaymentTransaction');
-          sessionStorage.removeItem('pendingPaymentOrderCode');
+          // Redirect to success page with query params
+          const successUrl = `/payment/success?${searchParams.toString()}`;
+          navigate(successUrl, { replace: true });
+        } else {
+          // Redirect to failure page with query params
+          const failureUrl = `/payment/failure?${searchParams.toString()}`;
+          navigate(failureUrl, { replace: true });
         }
         
       } catch (error) {
         console.error('❌ Error processing payment return:', error);
-        setPaymentResult({
-          success: false,
-          message: 'Có lỗi xảy ra khi xử lý kết quả thanh toán. Vui lòng thử lại.'
+        navigate('/payment/failure', { 
+          state: { 
+            message: 'Có lỗi xảy ra khi xử lý kết quả thanh toán. Vui lòng thử lại.' 
+          } 
         });
       }
     };
 
     handlePaymentReturn();
-  }, [searchParams]);
-
-  const handleGoToOrders = () => {
-    navigate('/driver/my-orders');
-  };
-
-  const handleGoHome = () => {
-    navigate('/');
-  };
-
-  if (!paymentResult) {
-    return (
-      <div className="flex items-center justify-center min-h-screen bg-gray-50">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <div className="text-xl text-gray-700">Đang xử lý kết quả thanh toán...</div>
-        </div>
-      </div>
-    );
-  }
+  }, [searchParams, navigate]);
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4 py-16">
-      <div className="bg-white rounded-lg shadow-xl p-8 max-w-2xl w-full text-center">
-        {paymentResult.success ? (
-          <>
-            <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <svg className="w-12 h-12 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-              </svg>
-            </div>
-            <h1 className="text-3xl font-bold text-green-600 mb-4">
-              Thanh toán thành công!
-            </h1>
-            <p className="text-gray-600 mb-6">
-              Đơn hàng của bạn đã được thanh toán thành công qua VNPay.
-            </p>
-          </>
-        ) : (
-          <>
-            <div className="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <svg className="w-12 h-12 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </div>
-            <h1 className="text-3xl font-bold text-red-600 mb-4">
-              Thanh toán thất bại
-            </h1>
-            <p className="text-gray-600 mb-6">
-              {paymentResult.message || 'Giao dịch không thành công. Vui lòng thử lại.'}
-            </p>
-          </>
-        )}
-
-        {/* Payment Details */}
-        <div className="bg-gray-50 rounded-lg p-6 mb-6 text-left">
-          {paymentResult.savedOrderCode && (
-            <div className="flex justify-between mb-3 pb-3 border-b border-gray-200">
-              <span className="text-sm text-gray-600">Mã đơn hàng:</span>
-              <span className="font-medium text-gray-800">#{paymentResult.savedOrderCode}</span>
-            </div>
-          )}
-          
-          {(paymentResult.transactionId || paymentResult.savedTransactionId) && (
-            <div className="flex justify-between mb-3 pb-3 border-b border-gray-200">
-              <span className="text-sm text-gray-600">Mã giao dịch:</span>
-              <span className="font-mono text-xs text-gray-800 break-all">
-                {paymentResult.transactionId || paymentResult.savedTransactionId}
-              </span>
-            </div>
-          )}
-          
-          {paymentResult.amount && (
-            <div className="flex justify-between items-center pt-2">
-              <span className="text-sm text-gray-600">Số tiền:</span>
-              <span className="text-2xl font-bold text-blue-600">
-                {paymentResult.amount.toLocaleString('vi-VN')} VND
-              </span>
-            </div>
-          )}
-        </div>
-
-        {/* Action Buttons */}
-        <div className="flex flex-col sm:flex-row gap-3 justify-center">
-          <button
-            onClick={handleGoToOrders}
-            className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-lg transition font-medium"
-          >
-            Xem đơn hàng của tôi
-          </button>
-          <button
-            onClick={handleGoHome}
-            className="bg-gray-100 hover:bg-gray-200 text-gray-700 px-8 py-3 rounded-lg transition font-medium"
-          >
-            Về trang chủ
-          </button>
-        </div>
-
-        {/* Additional Info */}
-        {paymentResult.success && (
-          <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-            <p className="text-sm text-blue-800">
-              💡 Bạn có thể đến trạm để đổi pin theo lịch đã đặt. Vui lòng mang theo mã đơn hàng.
-            </p>
-          </div>
-        )}
-        
-        {!paymentResult.success && (
-          <div className="mt-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-            <p className="text-sm text-yellow-800">
-              💡 Nếu bạn đã bị trừ tiền nhưng giao dịch thất bại, số tiền sẽ được hoàn lại trong 1-3 ngày làm việc.
-            </p>
-          </div>
-        )}
+    <div className="flex items-center justify-center min-h-screen bg-gray-50">
+      <div className="text-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+        <div className="text-xl text-gray-700">Đang xử lý kết quả thanh toán...</div>
+        <div className="text-sm text-gray-500 mt-2">Vui lòng chờ trong giây lát</div>
       </div>
     </div>
   );

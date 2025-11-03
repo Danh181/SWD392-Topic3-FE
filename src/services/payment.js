@@ -77,6 +77,9 @@ export function getPaymentMethodText(method) {
  * @returns {Object} Parsed payment result
  */
 export function parseVNPayReturn(searchParams) {
+  // Debug: log all available params
+  console.log('🔍 All available searchParams:', Array.from(searchParams.entries()));
+  
   const responseCode = searchParams.get('vnp_ResponseCode') || searchParams.get('status');
   const transactionStatus = searchParams.get('vnp_TransactionStatus') || searchParams.get('txnStatus');
   const transactionId = searchParams.get('vnp_TxnRef') || searchParams.get('ref');
