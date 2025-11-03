@@ -9,6 +9,8 @@ export default function PaymentReturn() {
   useEffect(() => {
     const handleReturn = async () => {
       try {
+        console.log('🚀 NEW PaymentReturn.jsx loaded - v2');
+        
         // Get VNPay response code from URL
         const responseCode = searchParams.get('vnp_ResponseCode');
         const txnRef = searchParams.get('vnp_TxnRef');
