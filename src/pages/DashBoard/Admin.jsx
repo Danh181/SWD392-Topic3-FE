@@ -534,7 +534,7 @@ const Admin = () => {
             {/* Additional Revenue Info */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
               <div className="bg-white p-6 rounded-xl shadow">
-                <h3 className="text-lg font-semibold mb-2">Doanh thu hôm nay</h3>
+                <h3 className="text-lg font-semibold mb-2">Tổng doanh thu</h3>
                 {dashboardLoading ? (
                   <div className="flex items-center justify-center py-2">
                     <div className="w-6 h-6 border-2 border-gray-200 border-t-[#0028b8] rounded-full animate-spin" />
