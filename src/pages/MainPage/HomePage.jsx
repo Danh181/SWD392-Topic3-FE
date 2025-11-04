@@ -135,7 +135,7 @@ if (user) {
               {/* Navigation Arrows */}
               <button
                 onClick={prevCar}
-                className="absolute left-8 top-1/2 -translate-y-1/2 z-50 bg-white hover:bg-gray-50 rounded-full p-4 shadow-xl transition-all duration-200 cursor-pointer"
+                className="absolute left-8 top-1/2 -translate-y-1/2 z-20 bg-white hover:bg-gray-50 rounded-full p-4 shadow-xl transition-all duration-200 cursor-pointer"
                 aria-label="Xe trước"
                 type="button"
                 style={{ pointerEvents: 'auto' }}
@@ -147,7 +147,7 @@ if (user) {
               
               <button
                 onClick={nextCar}
-                className="absolute right-8 top-1/2 -translate-y-1/2 z-50 bg-white hover:bg-gray-50 rounded-full p-4 shadow-xl transition-all duration-200 cursor-pointer"
+                className="absolute right-8 top-1/2 -translate-y-1/2 z-20 bg-white hover:bg-gray-50 rounded-full p-4 shadow-xl transition-all duration-200 cursor-pointer"
                 aria-label="Xe tiếp theo"
                 type="button"
                 style={{ pointerEvents: 'auto' }}
