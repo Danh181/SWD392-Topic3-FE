@@ -10,9 +10,16 @@ export default function PaymentFailure() {
     // Get payment data from navigation state
     const data = location.state;
     
+    // If no data, show demo/placeholder instead of redirecting
     if (!data) {
-      // No payment data, redirect to orders
-      navigate('/driver/my-orders', { replace: true });
+      // Set demo data for testing - allows direct URL access
+      setPaymentData({
+        success: false,
+        message: 'Thanh toán thất bại',
+        transactionId: sessionStorage.getItem('pendingPaymentTransaction') || 'N/A',
+        responseCode: '99',
+        isDemo: true
+      });
       return;
     }
 
