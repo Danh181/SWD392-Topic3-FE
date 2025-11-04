@@ -83,11 +83,7 @@ const SwapProcessingTab = () => {
       const statusMap = {};
       statuses.forEach(({ transactionId, status }) => {
         statusMap[transactionId] = status;
-        console.log(`💳 Payment for ${transactionId.slice(0, 8)}:`, {
-          status: status?.status,
-          method: status?.method,
-          fullData: status
-        });
+        console.log(`💳 Payment status for ${transactionId.slice(0, 8)}:`, status);
       });
       setPaymentStatuses(statusMap);
       
@@ -185,15 +181,13 @@ const SwapProcessingTab = () => {
     const isProcessing = processingId === id;
     const paymentStatus = paymentStatuses[id];
     const isPaymentCompleted = paymentStatus?.status === 'COMPLETED';
-    const paymentMethod = paymentStatus?.method; // 'VNPAY' or 'CASH'
     const hasArrived = !!swap.arrivalTime; // Check if already confirmed arrival
 
     // Debug log
     console.log(`🔍 Transaction ${id.slice(0, 8)}:`, {
       status: swap.status,
       hasArrived,
-      paymentMethod,
-      paymentStatus: paymentStatus?.status,
+      paymentStatus,
       isPaymentCompleted
     });
 
@@ -204,8 +198,8 @@ const SwapProcessingTab = () => {
       
       return (
         <div className="space-y-2">
-          {/* Payment Status Indicator for VNPay */}
-          {paymentMethod === 'VNPAY' && (
+          {/* Payment Status Indicator */}
+          {paymentStatus && (
             <div className={`p-2 rounded-lg text-xs font-medium text-center ${
               isPaymentCompleted 
                 ? 'bg-green-50 text-green-700 border border-green-200' 
@@ -215,17 +209,10 @@ const SwapProcessingTab = () => {
             </div>
           )}
           
-          {/* Cash payment indicator - only show if method is CASH and has arrived */}
-          {paymentMethod === 'CASH' && hasArrived && (
+          {/* Arrival confirmation info for cash payment - only show if no VNPay payment */}
+          {!paymentStatus && hasArrived && (
             <div className="p-2 rounded-lg text-xs font-medium text-center bg-blue-50 text-blue-700 border border-blue-200">
-              💵 Thanh toán tiền mặt tại trạm
-            </div>
-          )}
-          
-          {/* No payment method detected yet */}
-          {!paymentMethod && hasArrived && (
-            <div className="p-2 rounded-lg text-xs font-medium text-center bg-gray-50 text-gray-700 border border-gray-200">
-              ⏳ Chưa có thông tin thanh toán
+              💵 Thanh toán tiền mặt tại trạm hoặc VnPay
             </div>
           )}
           
