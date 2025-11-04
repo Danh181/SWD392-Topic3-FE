@@ -84,7 +84,7 @@ export async function createPayment(transactionId, paymentMethod, returnUrl = wi
  */
 export async function getPaymentStatus(transactionId) {
   try {
-    const res = await API.get(`/api/payment/transaction/${transactionId}`);
+    const res = await API.get(`/api/payment/status/${transactionId}`);
     return res?.data?.data;
   } catch (error) {
     console.error('❌ [Driver Payment] Failed to get payment status:', error?.response?.data || error);

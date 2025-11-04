@@ -83,7 +83,11 @@ const SwapProcessingTab = () => {
       const statusMap = {};
       statuses.forEach(({ transactionId, status }) => {
         statusMap[transactionId] = status;
-        console.log(`💳 Payment status for ${transactionId.slice(0, 8)}:`, status);
+        console.log(`💳 Payment for ${transactionId.slice(0, 8)}:`, {
+          status: status?.status,
+          method: status?.method,
+          fullData: status
+        });
       });
       setPaymentStatuses(statusMap);
       
@@ -181,21 +185,15 @@ const SwapProcessingTab = () => {
     const isProcessing = processingId === id;
     const paymentStatus = paymentStatuses[id];
     const isPaymentCompleted = paymentStatus?.status === 'COMPLETED';
+    const paymentMethod = paymentStatus?.method; // 'VNPAY' or 'CASH'
     const hasArrived = !!swap.arrivalTime; // Check if already confirmed arrival
-    
-    // Check payment method from API response
-    const paymentMethod = paymentStatus?.method; // 'VNPAY' or 'CASH' from backend
-    const isVNPayPayment = paymentMethod === 'VNPAY';
-    const isCashPayment = paymentMethod === 'CASH';
 
     // Debug log
     console.log(`🔍 Transaction ${id.slice(0, 8)}:`, {
       status: swap.status,
       hasArrived,
-      paymentStatus,
       paymentMethod,
-      isVNPayPayment,
-      isCashPayment,
+      paymentStatus: paymentStatus?.status,
       isPaymentCompleted
     });
 
@@ -207,7 +205,7 @@ const SwapProcessingTab = () => {
       return (
         <div className="space-y-2">
           {/* Payment Status Indicator for VNPay */}
-          {isVNPayPayment && (
+          {paymentMethod === 'VNPAY' && (
             <div className={`p-2 rounded-lg text-xs font-medium text-center ${
               isPaymentCompleted 
                 ? 'bg-green-50 text-green-700 border border-green-200' 
@@ -217,10 +215,17 @@ const SwapProcessingTab = () => {
             </div>
           )}
           
-          {/* Cash payment indicator - only show for CASH method after arrival */}
-          {isCashPayment && hasArrived && (
+          {/* Cash payment indicator - only show if method is CASH and has arrived */}
+          {paymentMethod === 'CASH' && hasArrived && (
             <div className="p-2 rounded-lg text-xs font-medium text-center bg-blue-50 text-blue-700 border border-blue-200">
               💵 Thanh toán tiền mặt tại trạm
+            </div>
+          )}
+          
+          {/* No payment method detected yet */}
+          {!paymentMethod && hasArrived && (
+            <div className="p-2 rounded-lg text-xs font-medium text-center bg-gray-50 text-gray-700 border border-gray-200">
+              ⏳ Chưa có thông tin thanh toán
             </div>
           )}
           
