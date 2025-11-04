@@ -15,7 +15,9 @@ import BatteryManagement from './pages/Staff/BatteryManagement/BatteryManagement
 import BatteryMonitoring from './pages/Staff/BatteryMonitoring/BatteryMonitoring';
 import TransactionManagement from './pages/Staff/TransactionManagement/TransactionManagement';
 import MyOrders from './pages/Driver/MyOrders/MyOrders';
-import PaymentReturn from './pages/Payment/PaymentReturn/PaymentReturn';
+import PaymentReturn from './pages/Payment/PaymentReturn';
+import PaymentSuccess from './pages/Payment/PaymentSuccess';
+import PaymentFailure from './pages/Payment/PaymentFailure';
 import Layout from './components/Layout';
 
 function App() {
@@ -49,8 +51,10 @@ function App() {
         <Route path="/driver/orders" element={<Layout><MyOrders /></Layout>} />
         <Route path="/driver/my-orders" element={<Layout><MyOrders /></Layout>} />
 
-        {/* Payment pages - minimal layout */}
-        <Route path="/payment/return" element={<Layout showHeader={false}><PaymentReturn /></Layout>} />
+        {/* Payment pages */}
+        <Route path="/payment/return" element={<PaymentReturn />} />
+        <Route path="/payment/success" element={<PaymentSuccess />} />
+        <Route path="/payment/failure" element={<PaymentFailure />} />
 
         {/* Fallback route */}
         <Route path="*" element={<Layout><HomePage /></Layout>} />

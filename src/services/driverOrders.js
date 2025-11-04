@@ -54,20 +54,20 @@ export async function getAllOrders() {
 
 /**
  * Create payment for a confirmed order
+ * Uses /api/payment/process (GET method as per backend)
  * @param {string} transactionId - UUID of the transaction
  * @param {string} paymentMethod - 'VNPAY' or 'CASH'
- * @param {string} returnUrl - URL to return after payment
  * @returns {Promise<Object>} Payment response with redirect URL or confirmation
  */
-export async function createPayment(transactionId, paymentMethod, returnUrl = window.location.origin + '/driver/orders') {
+export async function createPayment(transactionId, paymentMethod) {
   try {
-    const payload = {
-      transactionId,
-      paymentMethod,
-      returnUrl
-    };
-
-    const res = await API.post('/api/payment/create', payload);
+    // Backend uses GET /api/payment/process with query params
+    const res = await API.get('/api/payment/process', {
+      params: {
+        transactionId,
+        method: paymentMethod
+      }
+    });
     const data = res?.data?.data;
     
     return data;
@@ -79,13 +79,30 @@ export async function createPayment(transactionId, paymentMethod, returnUrl = wi
 
 /**
  * Get payment status for a transaction
+ * Uses /api/swap/{transactionId} to get transaction with payments
  * @param {string} transactionId - UUID of the transaction
  * @returns {Promise<Object>} Payment status and details
  */
 export async function getPaymentStatus(transactionId) {
   try {
-    const res = await API.get(`/api/payment/status/${transactionId}`);
-    return res?.data?.data;
+    // Use existing transaction API to get payment info
+    const res = await API.get(`/api/swap/${transactionId}`);
+    const transaction = res?.data?.data;
+    
+    // Extract latest payment from transaction
+    if (transaction?.payments && transaction.payments.length > 0) {
+      // Get latest payment (assuming sorted by date desc or first is latest)
+      const latestPayment = transaction.payments[0];
+      return {
+        status: latestPayment.status,
+        method: latestPayment.method,
+        amount: latestPayment.amount,
+        paymentDate: latestPayment.paymentDate
+      };
+    }
+    
+    // No payment found
+    return null;
   } catch (error) {
     console.error('❌ [Driver Payment] Failed to get payment status:', error?.response?.data || error);
     throw error;
