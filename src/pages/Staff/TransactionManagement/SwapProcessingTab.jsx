@@ -182,12 +182,20 @@ const SwapProcessingTab = () => {
     const paymentStatus = paymentStatuses[id];
     const isPaymentCompleted = paymentStatus?.status === 'COMPLETED';
     const hasArrived = !!swap.arrivalTime; // Check if already confirmed arrival
+    
+    // Check payment method from API response
+    const paymentMethod = paymentStatus?.method; // 'VNPAY' or 'CASH' from backend
+    const isVNPayPayment = paymentMethod === 'VNPAY';
+    const isCashPayment = paymentMethod === 'CASH';
 
     // Debug log
     console.log(`🔍 Transaction ${id.slice(0, 8)}:`, {
       status: swap.status,
       hasArrived,
       paymentStatus,
+      paymentMethod,
+      isVNPayPayment,
+      isCashPayment,
       isPaymentCompleted
     });
 
@@ -198,8 +206,8 @@ const SwapProcessingTab = () => {
       
       return (
         <div className="space-y-2">
-          {/* Payment Status Indicator */}
-          {paymentStatus && (
+          {/* Payment Status Indicator for VNPay */}
+          {isVNPayPayment && (
             <div className={`p-2 rounded-lg text-xs font-medium text-center ${
               isPaymentCompleted 
                 ? 'bg-green-50 text-green-700 border border-green-200' 
@@ -209,8 +217,8 @@ const SwapProcessingTab = () => {
             </div>
           )}
           
-          {/* Arrival confirmation info for cash payment - only show if no VNPay payment */}
-          {!paymentStatus && hasArrived && (
+          {/* Cash payment indicator - only show for CASH method after arrival */}
+          {isCashPayment && hasArrived && (
             <div className="p-2 rounded-lg text-xs font-medium text-center bg-blue-50 text-blue-700 border border-blue-200">
               💵 Thanh toán tiền mặt tại trạm
             </div>
