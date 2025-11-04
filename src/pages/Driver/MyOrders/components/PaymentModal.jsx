@@ -5,7 +5,6 @@ const PaymentModal = ({ order, onClose, onSuccess }) => {
   const [selectedMethod, setSelectedMethod] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [showSuccessModal, setShowSuccessModal] = useState(false);
 
   const paymentMethods = [
     {
@@ -61,7 +60,8 @@ const PaymentModal = ({ order, onClose, onSuccess }) => {
       } else if (selectedMethod === 'CASH') {
         // Cash payment returns payment ID
         console.log('✅ Cash payment processed:', paymentUrl);
-        setShowSuccessModal(true);
+        alert('Thanh toán bằng tiền mặt đã được ghi nhận. Vui lòng thanh toán tại trạm khi đến đổi pin.');
+        onSuccess();
       }
     } catch (e) {
       console.error('❌ Payment error:', e);
@@ -70,11 +70,6 @@ const PaymentModal = ({ order, onClose, onSuccess }) => {
       setLoading(false);
     }
     // Note: Don't set loading to false for VNPAY as we're redirecting
-  };
-
-  const handleCloseSuccess = () => {
-    setShowSuccessModal(false);
-    onSuccess();
   };
 
   const formatPrice = (price) => {
