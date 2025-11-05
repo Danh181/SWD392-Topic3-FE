@@ -27,6 +27,14 @@ const BatteryManagement = () => {
   // Total counts for tab display
   const [totalBatteryCount, setTotalBatteryCount] = useState(0);
   const [totalModelCount, setTotalModelCount] = useState(0);
+  
+  // Search states
+  const [batterySearchQuery, setBatterySearchQuery] = useState('');
+  const [batterySearchDateFrom, setBatterySearchDateFrom] = useState('');
+  const [batterySearchDateTo, setBatterySearchDateTo] = useState('');
+  const [batterySearchWarrantyFrom, setBatterySearchWarrantyFrom] = useState('');
+  const [batterySearchWarrantyTo, setBatterySearchWarrantyTo] = useState('');
+  const [modelSearchQuery, setModelSearchQuery] = useState('');
 
   // Load data when component mounts
   const loadData = async () => {
@@ -281,6 +289,33 @@ const BatteryManagement = () => {
               Danh sách Model pin ({totalModelCount || batteryModels.length})
             </h3>
             
+            {/* Search Section */}
+            <div className="mb-6 bg-gray-50 p-4 rounded-lg">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Tìm kiếm theo Type / Manufacturer / Chemistry
+                  </label>
+                  <input
+                    type="text"
+                    value={modelSearchQuery}
+                    onChange={(e) => setModelSearchQuery(e.target.value)}
+                    placeholder="Nhập type, hãng sản xuất hoặc hóa chất..."
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                </div>
+                
+                <div className="flex items-end">
+                  <button
+                    onClick={() => setModelSearchQuery('')}
+                    className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
+                  >
+                    Xóa bộ lọc
+                  </button>
+                </div>
+              </div>
+            </div>
+            
             {batteryModels.length === 0 ? (
               <div className="text-center py-12 text-gray-500">
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-16 w-16 mx-auto mb-4 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -290,7 +325,13 @@ const BatteryManagement = () => {
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {batteryModels.map((model) => {
+                {batteryModels.filter(model => {
+                  const searchLower = modelSearchQuery.toLowerCase();
+                  return !modelSearchQuery ||
+                    model.type?.toLowerCase().includes(searchLower) ||
+                    model.manufacturer?.toLowerCase().includes(searchLower) ||
+                    model.chemistry?.toLowerCase().includes(searchLower);
+                }).map((model) => {
                   const modelId = model.modelId || model.batteryModelId || model.id;
                   return (
                     <div key={modelId} className="border rounded-lg p-4 hover:shadow-md transition-shadow">
@@ -320,6 +361,23 @@ const BatteryManagement = () => {
                           <div className="flex justify-between">
                             <span className="text-gray-500">Ngưỡng SoH:</span>
                             <span className="font-medium">{model.minSohThreshold}%</span>
+                          </div>
+                        )}
+                        
+                        {/* Compatible Vehicles */}
+                        {model.compatibleVehicles && model.compatibleVehicles.length > 0 && (
+                          <div className="pt-2 border-t mt-2">
+                            <span className="text-gray-500 text-xs block mb-2">Xe tương thích:</span>
+                            <div className="flex flex-wrap gap-1">
+                              {model.compatibleVehicles.map((vehicle, vIdx) => (
+                                <span 
+                                  key={vIdx} 
+                                  className="inline-block px-2 py-1 text-xs bg-blue-100 text-blue-700 rounded"
+                                >
+                                  {vehicle}
+                                </span>
+                              ))}
+                            </div>
                           </div>
                         )}
                       </div>
@@ -399,6 +457,91 @@ const BatteryManagement = () => {
               Pin trong trạm ({totalBatteryCount || batteries.length})
             </h3>
 
+            {/* Search Section */}
+            <div className="mb-6 bg-gray-50 p-4 rounded-lg">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {/* Text Search */}
+                <div className="lg:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Tìm kiếm theo Số serial / Model / Trạm
+                  </label>
+                  <input
+                    type="text"
+                    value={batterySearchQuery}
+                    onChange={(e) => setBatterySearchQuery(e.target.value)}
+                    placeholder="Nhập số serial, model hoặc tên trạm..."
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                </div>
+                
+                {/* Clear Button */}
+                <div className="flex items-end">
+                  <button
+                    onClick={() => {
+                      setBatterySearchQuery('');
+                      setBatterySearchDateFrom('');
+                      setBatterySearchDateTo('');
+                      setBatterySearchWarrantyFrom('');
+                      setBatterySearchWarrantyTo('');
+                    }}
+                    className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
+                  >
+                    Xóa bộ lọc
+                  </button>
+                </div>
+                
+                {/* Manufacture Date Range */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Ngày SX từ
+                  </label>
+                  <input
+                    type="date"
+                    value={batterySearchDateFrom}
+                    onChange={(e) => setBatterySearchDateFrom(e.target.value)}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Ngày SX đến
+                  </label>
+                  <input
+                    type="date"
+                    value={batterySearchDateTo}
+                    onChange={(e) => setBatterySearchDateTo(e.target.value)}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                </div>
+                
+                {/* Warranty Date Range */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Hết BH từ
+                  </label>
+                  <input
+                    type="date"
+                    value={batterySearchWarrantyFrom}
+                    onChange={(e) => setBatterySearchWarrantyFrom(e.target.value)}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Hết BH đến
+                  </label>
+                  <input
+                    type="date"
+                    value={batterySearchWarrantyTo}
+                    onChange={(e) => setBatterySearchWarrantyTo(e.target.value)}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                </div>
+              </div>
+            </div>
+
             {batteries.length === 0 ? (
               <div className="text-center py-12 text-gray-500">
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-16 w-16 mx-auto mb-4 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -408,7 +551,52 @@ const BatteryManagement = () => {
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {batteries.map((battery) => {
+                {batteries.filter(battery => {
+                  // Text search filter
+                  const searchLower = batterySearchQuery.toLowerCase();
+                  const matchesText = !batterySearchQuery || 
+                    battery.serialNumber?.toLowerCase().includes(searchLower) ||
+                    battery.type?.toLowerCase().includes(searchLower) ||
+                    battery.currentStationName?.toLowerCase().includes(searchLower);
+                  
+                  // Manufacture date filter
+                  let matchesManufactureDate = true;
+                  if (batterySearchDateFrom || batterySearchDateTo) {
+                    const mfgDate = battery.manufactureDate ? new Date(battery.manufactureDate) : null;
+                    if (mfgDate) {
+                      if (batterySearchDateFrom) {
+                        const fromDate = new Date(batterySearchDateFrom);
+                        if (mfgDate < fromDate) matchesManufactureDate = false;
+                      }
+                      if (batterySearchDateTo) {
+                        const toDate = new Date(batterySearchDateTo);
+                        if (mfgDate > toDate) matchesManufactureDate = false;
+                      }
+                    } else {
+                      matchesManufactureDate = false;
+                    }
+                  }
+                  
+                  // Warranty date filter
+                  let matchesWarrantyDate = true;
+                  if (batterySearchWarrantyFrom || batterySearchWarrantyTo) {
+                    const warrantyDate = battery.warrantyExpiryDate ? new Date(battery.warrantyExpiryDate) : null;
+                    if (warrantyDate) {
+                      if (batterySearchWarrantyFrom) {
+                        const fromDate = new Date(batterySearchWarrantyFrom);
+                        if (warrantyDate < fromDate) matchesWarrantyDate = false;
+                      }
+                      if (batterySearchWarrantyTo) {
+                        const toDate = new Date(batterySearchWarrantyTo);
+                        if (warrantyDate > toDate) matchesWarrantyDate = false;
+                      }
+                    } else {
+                      matchesWarrantyDate = false;
+                    }
+                  }
+                  
+                  return matchesText && matchesManufactureDate && matchesWarrantyDate;
+                }).map((battery) => {
                   const key = battery.batteryId || battery.id;
                   return (
                     <div 

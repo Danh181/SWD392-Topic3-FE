@@ -18,7 +18,7 @@ const BookingBatteryModal = ({ open, onClose, onBooked }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  // Step 1: Load battery models and user vehicles
+  // Step 1: Load user vehicles when modal opens
   useEffect(() => {
     if (open) {
       setStep(1);
@@ -29,62 +29,45 @@ const BookingBatteryModal = ({ open, onClose, onBooked }) => {
       setError('');
       setLoading(true);
       
-      Promise.all([
-        getAllBatteryModels(1, 50),
-        getUserVehicles()
-      ])
-        .then(([modelsData, vehiclesData]) => {
-          setModels(modelsData);
+      getUserVehicles()
+        .then((vehiclesData) => {
           setVehicles(vehiclesData);
         })
-        .catch(() => setError('Không thể tải dữ liệu'))
+        .catch(() => setError('Không thể tải danh sách xe'))
         .finally(() => setLoading(false));
     }
   }, [open]);
 
-  // Step 2: Load stations when model selected
+  // Step 2: Load stations when vehicle selected
   useEffect(() => {
-    if (step === 2 && selectedModel) {
-      setSelectedStation(null); // Reset selected station khi vào step 2
+    if (step === 2 && selectedVehicle) {
+      setSelectedStation(null);
       setLoading(true);
       setError('');
       getOperationalStations(1, 50)
         .then(data => {
           setStations(data);
-          // Filter stations that have batteries of selected model type
-          // Tạm thời cho phép chọn tất cả trạm, step 3 sẽ check pin thực tế
-          const filtered = data.filter(station => {
-            return true;
-          });
-          setFilteredStations(filtered);
+          setFilteredStations(data);
         })
         .catch(() => setError('Không thể tải danh sách trạm'))
         .finally(() => setLoading(false));
     }
-  }, [step, selectedModel]);
+  }, [step, selectedVehicle]);
 
-  // Step 3: Load station details when selected
+  // Step 3: Load battery models when station selected
   useEffect(() => {
-    if (step === 3 && selectedStation && selectedModel) {
+    if (step === 3 && selectedStation) {
+      setSelectedModel(null);
       setLoading(true);
       setError('');
-      const stationId = selectedStation.stationId || selectedStation.id;
-      
-      // Gọi API getStationById để lấy thông tin chi tiết trạm
-      getStationById(stationId)
-        .then(stationDetail => {
-          // Backend sẽ validate pin khi đặt lịch, FE không cần check trước
-          // Hiện tại chỉ hiển thị thông báo chung
-          setAvailableBatteries([{ available: true }]); // Giả định có pin
+      getAllBatteryModels(1, 50)
+        .then(modelsData => {
+          setModels(modelsData);
         })
-        .catch((err) => {
-          console.error('Failed to get station details:', err);
-          // Vẫn cho phép đặt lịch, nhân viên sẽ xác nhận sau
-          setAvailableBatteries([{ available: true }]);
-        })
+        .catch(() => setError('Không thể tải danh sách model pin'))
         .finally(() => setLoading(false));
     }
-  }, [step, selectedStation, selectedModel]);
+  }, [step, selectedStation]);
 
   if (!open) return null;
 
@@ -95,36 +78,49 @@ const BookingBatteryModal = ({ open, onClose, onBooked }) => {
         <h2 className="text-2xl font-bold mb-6 text-center">Đặt lịch đổi pin</h2>
         {error && <div className="text-red-600 mb-3 text-center">{error}</div>}
         {loading && <div className="text-gray-500 text-center">Đang tải...</div>}
-        {/* Step 1: Chọn model pin */}
+        
+        {/* Step 1: Chọn xe */}
         {!loading && step === 1 && (
           <div>
-            <div className="mb-3 font-semibold">Chọn loại model pin:</div>
+            <div className="mb-3 font-semibold">Chọn xe của bạn:</div>
             <div className="grid grid-cols-1 gap-3 max-h-60 overflow-y-auto">
-              {models.map(model => (
-                <button
-                  key={model.modelId || model.batteryModelId || model.type}
-                  className={`border rounded-lg px-5 py-3 text-left transition-all duration-150 ${selectedModel?.type === model.type ? 'bg-blue-100 border-blue-500' : 'bg-white hover:bg-gray-50 border-gray-300'}`}
-                  onClick={() => setSelectedModel(model)}
-                >
-                  <div className="font-semibold text-base">{model.type}</div>
-                  <div className="text-xs text-gray-500">{model.manufacturer} - {model.chemistry}</div>
-                </button>
-              ))}
+              {vehicles.length > 0 ? (
+                vehicles.map(vehicle => {
+                  const vehicleKey = vehicle.vehicleId || vehicle.id;
+                  const selectedKey = selectedVehicle?.vehicleId || selectedVehicle?.id;
+                  const isSelected = selectedVehicle && selectedKey === vehicleKey;
+                  return (
+                    <button
+                      key={vehicleKey}
+                      className={`border rounded-lg px-5 py-3 text-left transition-all duration-150 ${isSelected ? 'bg-blue-100 border-blue-500' : 'bg-white hover:bg-gray-50 border-gray-300'}`}
+                      onClick={() => setSelectedVehicle(vehicle)}
+                    >
+                      <div className="font-semibold text-base">{vehicle.make} {vehicle.model}</div>
+                      <div className="text-xs text-gray-500">Biển số: {vehicle.licensePlate} | Loại pin: {vehicle.batteryType}</div>
+                    </button>
+                  );
+                })
+              ) : (
+                <div className="text-gray-500 text-center py-3">Bạn chưa đăng ký xe nào. Vui lòng đăng ký xe trước khi đặt lịch.</div>
+              )}
             </div>
             <div className="mt-6 flex justify-end gap-3">
               <button onClick={onClose} className="px-5 py-2 rounded-lg bg-gray-200 hover:bg-gray-300 transition-colors font-medium">Hủy</button>
               <button
                 className="px-5 py-2 rounded-lg bg-[#0028b8] text-white font-medium hover:bg-[#335cff] transition-colors disabled:opacity-50"
-                disabled={!selectedModel}
+                disabled={!selectedVehicle}
                 onClick={() => setStep(2)}
               >Tiếp tục</button>
             </div>
           </div>
         )}
+        
         {/* Step 2: Chọn trạm */}
         {!loading && step === 2 && (
           <div>
-            <div className="mb-3 font-semibold">Chọn trạm có model pin <span className="text-blue-700">{selectedModel?.type}</span>:</div>
+            <div className="mb-3 font-semibold">
+              Chọn trạm đổi pin cho xe <span className="text-blue-700">{selectedVehicle?.make} {selectedVehicle?.model}</span>:
+            </div>
             <div className="grid grid-cols-1 gap-3 max-h-60 overflow-y-auto">
               {filteredStations.map(station => {
                 const stationKey = station.stationId || station.id;
@@ -152,62 +148,71 @@ const BookingBatteryModal = ({ open, onClose, onBooked }) => {
             </div>
           </div>
         )}
-        {/* Step 3: Xác nhận trạm và chọn hình thức */}
+        
+        {/* Step 3: Chọn model pin */}
         {!loading && step === 3 && (
           <div>
-            <div className="mb-3 font-semibold">Xác nhận trạm <span className="text-blue-700">{selectedStation?.name}</span> có pin model <span className="text-blue-700">{selectedModel?.type}</span></div>
-            
-            {availableBatteries.length > 0 ? (
-              <div className="mb-4 text-blue-700">
-                <svg className="inline w-5 h-5 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
-                </svg>
-                Nhân viên trạm sẽ xác nhận pin sẵn sàng sau khi bạn đặt lịch
-              </div>
-            ) : (
-              <div className="mb-4 text-gray-600">Đang kiểm tra tình trạng trạm...</div>
-            )}
-
-            <div className="mb-2 font-semibold">Chọn xe của bạn:</div>
-            <div className="grid grid-cols-1 gap-3 mb-4 max-h-40 overflow-y-auto">
-              {vehicles.length > 0 ? (
-                vehicles.map(vehicle => {
-                  const vehicleKey = vehicle.vehicleId || vehicle.id;
-                  const selectedKey = selectedVehicle?.vehicleId || selectedVehicle?.id;
-                  const isSelected = selectedVehicle && selectedKey === vehicleKey;
-                  return (
-                    <button
-                      key={vehicleKey}
-                      className={`border rounded-lg px-5 py-3 text-left transition-all duration-150 ${isSelected ? 'bg-blue-100 border-blue-500' : 'bg-white hover:bg-gray-50 border-gray-300'}`}
-                      onClick={() => setSelectedVehicle(vehicle)}
-                    >
-                      <div className="font-semibold text-base">{vehicle.make} {vehicle.model}</div>
-                      <div className="text-xs text-gray-500">Biển số: {vehicle.licensePlate} | Pin: {vehicle.batteryType}</div>
-                    </button>
-                  );
-                })
-              ) : (
-                <div className="text-gray-500 text-center py-3">Bạn chưa đăng ký xe nào. Vui lòng đăng ký xe trước khi đặt lịch.</div>
-              )}
+            <div className="mb-3 font-semibold">
+              Chọn loại model pin cho xe <span className="text-blue-700">{selectedVehicle?.make} {selectedVehicle?.model}</span> (Loại pin: <span className="text-blue-700">{selectedVehicle?.batteryType}</span>):
             </div>
-
-            {vehicles.length > 0 && (
-              <div className="mt-6 flex justify-end gap-3">
-                <button 
-                  className="px-5 py-2 rounded-lg bg-[#0028b8] text-white font-medium hover:bg-[#335cff] transition-colors disabled:opacity-50" 
-                  onClick={() => setStep(4)}
-                  disabled={!selectedVehicle}
-                >
-                  Đặt lịch
-                </button>
-              </div>
-            )}
-
+            <div className="grid grid-cols-1 gap-3 max-h-60 overflow-y-auto">
+              {models.map(model => {
+                const modelKey = model.modelId || model.batteryModelId || model.type;
+                // Validate: Loại pin của model phải trùng với loại pin của xe
+                const isCompatible = model.type === selectedVehicle?.batteryType;
+                
+                return (
+                  <button
+                    key={modelKey}
+                    className={`border rounded-lg px-5 py-3 text-left transition-all duration-150 ${
+                      !isCompatible 
+                        ? 'bg-gray-100 border-gray-200 opacity-50 cursor-not-allowed' 
+                        : selectedModel?.type === model.type 
+                          ? 'bg-blue-100 border-blue-500' 
+                          : 'bg-white hover:bg-gray-50 border-gray-300'
+                    }`}
+                    onClick={() => {
+                      if (isCompatible) {
+                        setSelectedModel(model);
+                      } else {
+                        Swal.fire({
+                          icon: 'error',
+                          title: 'Không tương thích',
+                          text: `Model pin "${model.type}" không tương thích với loại pin "${selectedVehicle?.batteryType}" của xe ${selectedVehicle?.make} ${selectedVehicle?.model}!`,
+                          confirmButtonColor: '#0028b8'
+                        });
+                      }
+                    }}
+                    disabled={!isCompatible}
+                  >
+                    <div className="font-semibold text-base">
+                      {model.type}
+                      {!isCompatible && <span className="ml-2 text-xs text-red-600">❌ Không tương thích</span>}
+                      {isCompatible && <span className="ml-2 text-xs text-green-600">✓ Tương thích</span>}
+                    </div>
+                    <div className="text-xs text-gray-500">
+                      {model.manufacturer} - {model.chemistry}
+                      {model.compatibleVehicles && model.compatibleVehicles.length > 0 && (
+                        <div className="mt-1">
+                          <span className="font-medium">Xe tương thích:</span> {model.compatibleVehicles.join(', ')}
+                        </div>
+                      )}
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
             <div className="mt-6 flex justify-between gap-3">
               <button onClick={() => setStep(2)} className="px-5 py-2 rounded-lg bg-gray-200 hover:bg-gray-300 transition-colors font-medium">Quay lại</button>
+              <button
+                className="px-5 py-2 rounded-lg bg-[#0028b8] text-white font-medium hover:bg-[#335cff] transition-colors disabled:opacity-50"
+                disabled={!selectedModel}
+                onClick={() => setStep(4)}
+              >Tiếp tục</button>
             </div>
           </div>
         )}
+        
         {/* Step 4: Đặt lịch */}
         {!loading && step === 4 && (
           <BookingScheduleStep
