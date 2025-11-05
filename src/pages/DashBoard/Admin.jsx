@@ -1507,6 +1507,11 @@ const Admin = () => {
                               <label class="block text-sm font-medium text-gray-700 mb-1">Ngưỡng SoH tối thiểu (%)</label>
                               <input id="minSohThreshold" type="number" min="0" max="100" step="0.1" class="w-full px-3 py-2 border rounded" placeholder="VD: 80" />
                             </div>
+                            <div class="col-span-2">
+                              <label class="block text-sm font-medium text-gray-700 mb-1">Xe tương thích</label>
+                              <input id="compatibleVehicles" class="w-full px-3 py-2 border rounded" placeholder="VD: VinFast VF8, Tesla Model 3 (cách nhau bằng dấu phẩy)" />
+                              <p class="text-xs text-gray-500 mt-1">Nhập các loại xe tương thích, cách nhau bằng dấu phẩy</p>
+                            </div>
                           </div>
                         `,
                         width: '600px',
@@ -1521,6 +1526,10 @@ const Admin = () => {
                           const warrantyMonths = Number.parseInt(document.getElementById('warrantyMonths').value, 10) || 0;
                           const maxChargePowerKwh = Number.parseInt(document.getElementById('maxChargePowerKwh').value, 10) || 0;
                           const minSohThreshold = Number(document.getElementById('minSohThreshold').value) || null;
+                          const compatibleVehiclesInput = document.getElementById('compatibleVehicles').value.trim();
+                          const compatibleVehicles = compatibleVehiclesInput 
+                            ? compatibleVehiclesInput.split(',').map(v => v.trim()).filter(v => v)
+                            : [];
 
                           if (!type) {
                             Swal.showValidationMessage('Vui lòng nhập loại pin');
@@ -1546,7 +1555,8 @@ const Admin = () => {
                             weightKg,
                             warrantyMonths,
                             maxChargePowerKwh,
-                            minSohThreshold
+                            minSohThreshold,
+                            compatibleVehicles
                           };
 
                           return defineBatteryModel(payload)
@@ -1596,6 +1606,7 @@ const Admin = () => {
                           <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Warranty (months)</th>
                           <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Max charge (kWh)</th>
                           <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Min SoH (%)</th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Xe tương thích</th>
                           <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Thao tác</th>
                         </tr>
                       </thead>
@@ -1609,6 +1620,22 @@ const Admin = () => {
                             <td className="px-4 py-3 whitespace-nowrap text-sm">{model.warrantyMonths || 0}</td>
                             <td className="px-4 py-3 whitespace-nowrap text-sm">{model.maxChargePowerKwh || 0}</td>
                             <td className="px-4 py-3 whitespace-nowrap text-sm">{model.minSohThreshold || 'N/A'}</td>
+                            <td className="px-4 py-3 text-sm">
+                              {model.compatibleVehicles && model.compatibleVehicles.length > 0 ? (
+                                <div className="flex flex-wrap gap-1">
+                                  {model.compatibleVehicles.map((vehicle, vIdx) => (
+                                    <span 
+                                      key={vIdx} 
+                                      className="inline-block px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded"
+                                    >
+                                      {vehicle}
+                                    </span>
+                                  ))}
+                                </div>
+                              ) : (
+                                <span className="text-gray-400 text-xs">Chưa có</span>
+                              )}
+                            </td>
                             <td className="px-4 py-3 whitespace-nowrap text-sm">
                               <button
                                 onClick={() => {

@@ -92,7 +92,7 @@ const BookingBatteryModal = ({ open, onClose, onBooked }) => {
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-white bg-opacity-90">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl p-10 relative border border-gray-200">
         <button onClick={onClose} className="absolute top-3 right-3 text-gray-400 hover:text-gray-700 text-2xl">✕</button>
-        <h2 className="text-2xl font-bold mb-6 text-center">Đặt lịch đổi/thuê pin</h2>
+        <h2 className="text-2xl font-bold mb-6 text-center">Đặt lịch đổi pin</h2>
         {error && <div className="text-red-600 mb-3 text-center">{error}</div>}
         {loading && <div className="text-gray-500 text-center">Đang tải...</div>}
         {/* Step 1: Chọn model pin */}
@@ -261,7 +261,7 @@ const BookingScheduleStep = ({ station, model, vehicle, onBack, onBooked, onClos
       await createScheduledSwap(payload);
       
       setLoading(false);
-      Swal.fire('Thành công', 'Đã đặt lịch đổi/thuê pin! Vui lòng chờ nhân viên xác nhận. Mời bạn vào trang cá nhân -> đơn hàng của tôi để xem chi tiết', 'success');
+      Swal.fire('Thành công', 'Đã đặt lịch đổi pin! Vui lòng chờ nhân viên xác nhận. Mời bạn vào trang cá nhân -> đơn hàng của tôi để xem chi tiết', 'success');
       onBooked();
       onClose();
     } catch (err) {

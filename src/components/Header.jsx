@@ -62,17 +62,17 @@ const Header = () => {
             </svg>
             <span className="font-medium">Trạm</span>
           </button>
-          {/* Nút đặt lịch đổi/thuê pin cho Driver */}
+          {/* Nút Đặt lịch đổi pin cho Driver */}
           {hasRole?.('DRIVER') && (
             <button
               onClick={() => setShowBooking(true)}
               className="inline-flex items-center gap-2 px-3 py-1.5 bg-[#0028b8] text-white rounded-full shadow hover:bg-[#335cff] transition-colors text-sm"
-              aria-label="Đặt lịch đổi/thuê pin"
+              aria-label="Đặt lịch đổi pin"
             >
               <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
-              Đặt lịch đổi/thuê pin
+              Đặt lịch đổi pin
             </button>
           )}
         </nav>
@@ -106,7 +106,7 @@ const Header = () => {
           {isAuthenticated ? 'Đăng xuất' : 'Đăng nhập'}
         </button>
       </div>
-      {/* Modal đặt lịch đổi/thuê pin */}
+      {/* Modal đặt lịch đổi pin */}
       <BookingBatteryModal open={showBooking} onClose={() => setShowBooking(false)} onBooked={() => {}} />
     </header>
   );
