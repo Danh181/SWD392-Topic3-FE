@@ -5,6 +5,7 @@ import Admin from "./pages/DashBoard/Admin";
 import HomePage from "./pages/MainPage/HomePage";
 import ProfileUser from './pages/Profile/pages/ProfileUser';
 import EditProfile from './pages/Profile/pages/EditProfile';
+import Vehicle from './pages/Profile/pages/vehicles/Vehicle';
 import StaffDashboard from './pages/Staff/StaffDashboard';
 import Stations from './pages/Stations/Stations';
 import StationDetail from './pages/Stations/StationDetail';
@@ -15,6 +16,7 @@ import BatteryManagement from './pages/Staff/BatteryManagement/BatteryManagement
 import BatteryMonitoring from './pages/Staff/BatteryMonitoring/BatteryMonitoring';
 import TransactionManagement from './pages/Staff/TransactionManagement/TransactionManagement';
 import MyOrders from './pages/Driver/MyOrders/MyOrders';
+import BookSwapPage from './pages/Driver/BookSwap/BookSwapPage';
 import PaymentReturn from './pages/Payment/PaymentReturn';
 import PaymentSuccess from './pages/Payment/PaymentSuccess';
 import PaymentFailure from './pages/Payment/PaymentFailure';
@@ -46,8 +48,10 @@ function App() {
         {/* User pages with Layout */}
         <Route path="/profile" element={<Layout showHeader={false} showFooter={false}><ProfileUser /></Layout>} />
         <Route path="/profile/edit" element={<Layout showHeader={false} showFooter={false}><EditProfile /></Layout>} />
+        <Route path="/profile/vehicles" element={<Layout showHeader={false} showFooter={false}><Vehicle /></Layout>} />
 
         {/* Driver pages with Layout */}
+        <Route path="/driver/book-swap" element={<BookSwapPage />} />
         <Route path="/driver/orders" element={<Layout><MyOrders /></Layout>} />
         <Route path="/driver/my-orders" element={<Layout><MyOrders /></Layout>} />
 

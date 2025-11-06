@@ -2,14 +2,12 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Swal from 'sweetalert2';
 import { useAuth } from '../context/AuthContext';
-import BookingBatteryModal from './BookingBatteryModal';
 import API, { logout as apiLogout } from '../services/auth';
 import { resolveAssetUrl } from '../services/user';
 
 const Header = () => {
   const navigate = useNavigate();
   const { logout: contextLogout, user, isAuthenticated, hasRole } = useAuth();
-  const [showBooking, setShowBooking] = useState(false);
 
   const handleLogout = async () => {
     const res = await Swal.fire({
@@ -65,7 +63,7 @@ const Header = () => {
           {/* Nút Đặt lịch đổi pin cho Driver */}
           {hasRole?.('DRIVER') && (
             <button
-              onClick={() => setShowBooking(true)}
+              onClick={() => navigate('/driver/book-swap')}
               className="inline-flex items-center gap-2 px-3 py-1.5 bg-[#0028b8] text-white rounded-full shadow hover:bg-[#335cff] transition-colors text-sm"
               aria-label="Đặt lịch đổi pin"
             >
@@ -106,8 +104,6 @@ const Header = () => {
           {isAuthenticated ? 'Đăng xuất' : 'Đăng nhập'}
         </button>
       </div>
-      {/* Modal đặt lịch đổi pin */}
-      <BookingBatteryModal open={showBooking} onClose={() => setShowBooking(false)} onBooked={() => {}} />
     </header>
   );
 };
