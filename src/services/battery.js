@@ -1,4 +1,5 @@
 import API from './auth';
+import { jwtDecode } from 'jwt-decode';
 
 /**
  * Battery Management APIs
@@ -167,35 +168,71 @@ export async function updateBatteryModel(modelId, payload) {
  */
 export async function getCurrentStaffStation() {
   try {
+    console.log('🔵 [1/4] Starting getCurrentStaffStation...');
+    
     // Get all staff and find current user's staff info
+    console.log('🔵 [2/4] Fetching /api/station-staff/all...');
     const res = await API.get('/api/station-staff/all');
     const allStaff = res?.data?.data || [];
+    console.log('✅ [2/4] Got', allStaff.length, 'staff members');
     
-    // Get current user info to match
-    const { getCurrentProfile } = await import('./user');
-    const profile = await getCurrentProfile();
+    // Get current user ID from JWT token (most reliable)
+    console.log('🔵 [3/4] Getting userId from JWT token...');
+    let currentUserId = null;
     
-    if (!profile?.userId && !profile?.id) {
+    try {
+      const token = localStorage.getItem('accessToken');
+      if (token) {
+        const decoded = jwtDecode(token);
+        console.log('✅ [3/4] Decoded JWT:', decoded);
+        // Spring Security JWT usually has "sub" field with userId
+        currentUserId = decoded.sub || decoded.userId || decoded.id;
+      }
+    } catch (jwtError) {
+      console.warn('⚠️ Cannot decode JWT:', jwtError);
+    }
+    
+    // Fallback: Try API profile if JWT fails
+    if (!currentUserId) {
+      console.log('🔵 [3/4] JWT failed, trying API profile...');
+      const { getCurrentProfile } = await import('./user');
+      const profile = await getCurrentProfile();
+      console.log('✅ [3/4] Profile from API:', profile);
+      currentUserId = profile?.userId || profile?.id;
+    }
+    
+    if (!currentUserId) {
+      console.error('❌ [3/4] Cannot get userId from JWT or API');
       throw new Error('Cannot get current user ID');
     }
     
-    const currentUserId = profile.userId || profile.id;
+    console.log('✅ [3/4] Using userId:', currentUserId);
     
     // Find staff record that matches current user
+    console.log('🔵 [4/4] Finding staff with userId:', currentUserId);
     const currentStaff = allStaff.find(staff => 
       String(staff.staffId) === String(currentUserId)
     );
     
     if (!currentStaff) {
+      console.error('❌ [4/4] Staff not found! userId:', currentUserId);
+      console.error('Available staffIds:', allStaff.map(s => s.staffId));
       throw new Error('Staff chưa được phân công vào trạm nào');
     }
+    
+    console.log('✅ [4/4] Found staff station:', currentStaff.stationName);
     
     return {
       stationId: currentStaff.stationId,
       stationName: currentStaff.stationName
     };
   } catch (error) {
-    console.error('Failed to get current staff station:', error);
+    console.error('❌ getCurrentStaffStation ERROR:', error);
+    console.error('Error details:', {
+      message: error.message,
+      response: error.response?.data,
+      status: error.response?.status
+    });
     throw error;
   }
 }

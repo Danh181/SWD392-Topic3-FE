@@ -5,6 +5,7 @@ import Admin from "./pages/DashBoard/Admin";
 import HomePage from "./pages/MainPage/HomePage";
 import ProfileUser from './pages/Profile/pages/ProfileUser';
 import EditProfile from './pages/Profile/pages/EditProfile';
+import Vehicle from './pages/Profile/pages/vehicles/Vehicle';
 import StaffDashboard from './pages/Staff/StaffDashboard';
 import Stations from './pages/Stations/Stations';
 import StationDetail from './pages/Stations/StationDetail';
@@ -15,7 +16,10 @@ import BatteryManagement from './pages/Staff/BatteryManagement/BatteryManagement
 import BatteryMonitoring from './pages/Staff/BatteryMonitoring/BatteryMonitoring';
 import TransactionManagement from './pages/Staff/TransactionManagement/TransactionManagement';
 import MyOrders from './pages/Driver/MyOrders/MyOrders';
-import PaymentReturn from './pages/Payment/PaymentReturn/PaymentReturn';
+import BookSwapPage from './pages/Driver/BookSwap/BookSwapPage';
+import PaymentReturn from './pages/Payment/PaymentReturn';
+import PaymentSuccess from './pages/Payment/PaymentSuccess';
+import PaymentFailure from './pages/Payment/PaymentFailure';
 import Layout from './components/Layout';
 
 function App() {
@@ -24,8 +28,8 @@ function App() {
       <Routes>
         {/* Public pages with Layout (Header + Footer) */}
         <Route path="/mainpage" element={<Layout><HomePage /></Layout>} />
-        <Route path="/stations" element={<Layout><Stations /></Layout>} />
-        <Route path="/stations/:id" element={<Layout><PublicStationDetail /></Layout>} />
+        <Route path="/stations" element={<Layout showHeader={false}><Stations /></Layout>} />
+        <Route path="/stations/:id" element={<Layout showHeader={false}><PublicStationDetail /></Layout>} />
         
         {/* Auth pages - no header/footer */}
         <Route path="/register" element={<Register />} />
@@ -39,18 +43,22 @@ function App() {
         <Route path="/staff/transactions" element={<TransactionManagement />} />
         <Route path="/dashboard/admin/station/:id" element={<StationDetail />} />
         <Route path="/dashboard/admin/staff" element={<StaffManagement />} />
-        <Route path="/staff/manage-staff" element={<StaffManagementForStaff />} />
+        <Route path="/staff/manage-staff" element={<Layout showHeader={true} showFooter={false}><StaffManagementForStaff /></Layout>} />
 
         {/* User pages with Layout */}
-        <Route path="/profile" element={<Layout><ProfileUser /></Layout>} />
-        <Route path="/profile/edit" element={<Layout><EditProfile /></Layout>} />
+        <Route path="/profile" element={<Layout showHeader={false} showFooter={false}><ProfileUser /></Layout>} />
+        <Route path="/profile/edit" element={<Layout showHeader={false} showFooter={false}><EditProfile /></Layout>} />
+        <Route path="/profile/vehicles" element={<Layout showHeader={false} showFooter={false}><Vehicle /></Layout>} />
 
         {/* Driver pages with Layout */}
+        <Route path="/driver/book-swap" element={<BookSwapPage />} />
         <Route path="/driver/orders" element={<Layout><MyOrders /></Layout>} />
         <Route path="/driver/my-orders" element={<Layout><MyOrders /></Layout>} />
 
-        {/* Payment pages - minimal layout */}
-        <Route path="/payment/return" element={<Layout showHeader={false}><PaymentReturn /></Layout>} />
+        {/* Payment pages */}
+        <Route path="/payment/return" element={<PaymentReturn />} />
+        <Route path="/payment/success" element={<PaymentSuccess />} />
+        <Route path="/payment/failure" element={<PaymentFailure />} />
 
         {/* Fallback route */}
         <Route path="*" element={<Layout><HomePage /></Layout>} />

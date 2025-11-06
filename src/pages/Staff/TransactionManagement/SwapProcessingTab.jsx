@@ -205,14 +205,14 @@ const SwapProcessingTab = () => {
                 ? 'bg-green-50 text-green-700 border border-green-200' 
                 : 'bg-yellow-50 text-yellow-700 border border-yellow-200'
             }`}>
-              {isPaymentCompleted ? '✓ Đã thanh toán' : '⚠️ Chưa thanh toán'}
+              {isPaymentCompleted ? '✓ Đã thanh toán VNPay' : '⚠️ Đang xử lý thanh toán VNPay'}
             </div>
           )}
           
-          {/* Arrival confirmation info for cash payment */}
+          {/* Arrival confirmation info for cash payment - only show if no VNPay payment */}
           {!paymentStatus && hasArrived && (
             <div className="p-2 rounded-lg text-xs font-medium text-center bg-blue-50 text-blue-700 border border-blue-200">
-              💵 Thanh toán tiền mặt tại trạm
+              💵 Thanh toán tiền mặt tại trạm hoặc VnPay
             </div>
           )}
           
