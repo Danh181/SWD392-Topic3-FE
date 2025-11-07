@@ -473,6 +473,42 @@ export async function getBatteriesByStation(stationId) {
 }
 
 /**
+ * Get ALL batteries for a specific station with FULL status (all pages)
+ * For swap confirmation and walk-in creation - needs all available batteries
+ * @param {string} stationId - Station UUID
+ */
+export async function getBatteriesByStationComplete(stationId) {
+  try {
+    const allBatteries = [];
+    let currentPage = 1;
+    let hasMore = true;
+    
+    while (hasMore) {
+      const batteries = await getBatteriesByStationAndStatus(stationId, 'FULL', currentPage);
+      
+      if (batteries.length === 0) {
+        hasMore = false;
+      } else {
+        allBatteries.push(...batteries);
+        
+        // If we got less than 10 batteries, we've reached the end
+        if (batteries.length < 10) {
+          hasMore = false;
+        } else {
+          currentPage++;
+        }
+      }
+    }
+    
+    console.log(`Loaded ${allBatteries.length} FULL batteries from station ${stationId} (${currentPage} pages)`);
+    return allBatteries;
+  } catch (error) {
+    console.error('Failed to get all batteries by station:', error);
+    return [];
+  }
+}
+
+/**
  * Get ALL batteries for a specific station (all statuses)
  * For Battery Management page - shows all batteries regardless of status
  * @param {string} stationId - Station UUID

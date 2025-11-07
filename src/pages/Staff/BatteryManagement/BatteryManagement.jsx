@@ -74,6 +74,15 @@ const BatteryManagement = () => {
       setError('');
 
       const result = await getStaffBatteryInventoryPaginated(page);
+      
+      // If no data and page > 1, go back to previous page
+      if (result.batteries.length === 0 && page > 1) {
+        console.log(`Page ${page} is empty, going back to page ${page - 1}`);
+        setBatteryCurrentPage(page - 1);
+        loadBatteries(page - 1);
+        return;
+      }
+      
       setBatteries(result.batteries);
       setBatteryHasMore(result.hasMore);
       setBatteryCurrentPage(page);
@@ -101,6 +110,15 @@ const BatteryManagement = () => {
       setError('');
 
       const modelsData = await getAllBatteryModels(page);
+      
+      // If no data and page > 1, go back to previous page
+      if (modelsData.length === 0 && page > 1) {
+        console.log(`Page ${page} is empty, going back to page ${page - 1}`);
+        setModelCurrentPage(page - 1);
+        loadBatteryModels(page - 1);
+        return;
+      }
+      
       setBatteryModels(modelsData);
       setModelHasMore(modelsData.length === 10); // Backend LIST_SIZE = 10
       setModelCurrentPage(page);
@@ -402,20 +420,21 @@ const BatteryManagement = () => {
                     ← Trước
                   </button>
                   
-                  {/* Show page numbers */}
-                  {modelCurrentPage > 2 && (
-                    <>
-                      <button
-                        onClick={() => loadBatteryModels(1)}
-                        className="px-3 py-1 text-sm border border-gray-300 rounded hover:bg-gray-50"
-                      >
-                        1
-                      </button>
-                      {modelCurrentPage > 3 && <span className="px-2 text-gray-400">...</span>}
-                    </>
-                  )}
+                  {/* Always show page 1 */}
+                  <button
+                    onClick={() => loadBatteryModels(1)}
+                    className={`px-3 py-1 text-sm border border-gray-300 rounded hover:bg-gray-50 ${
+                      modelCurrentPage === 1 ? 'bg-[#0028b8] text-white font-medium' : ''
+                    }`}
+                  >
+                    1
+                  </button>
                   
-                  {modelCurrentPage > 1 && (
+                  {/* Show ellipsis if current page is far from start */}
+                  {modelCurrentPage > 3 && <span className="px-2 text-gray-400">...</span>}
+                  
+                  {/* Show page before current */}
+                  {modelCurrentPage > 2 && (
                     <button
                       onClick={() => loadBatteryModels(modelCurrentPage - 1)}
                       className="px-3 py-1 text-sm border border-gray-300 rounded hover:bg-gray-50"
@@ -424,10 +443,14 @@ const BatteryManagement = () => {
                     </button>
                   )}
                   
-                  <span className="px-3 py-1 text-sm bg-[#0028b8] text-white rounded font-medium">
-                    {modelCurrentPage}
-                  </span>
+                  {/* Show current page (if not page 1) */}
+                  {modelCurrentPage > 1 && (
+                    <span className="px-3 py-1 text-sm bg-[#0028b8] text-white rounded font-medium">
+                      {modelCurrentPage}
+                    </span>
+                  )}
                   
+                  {/* Show page after current */}
                   {modelHasMore && (
                     <button
                       onClick={() => loadBatteryModels(modelCurrentPage + 1)}
@@ -436,6 +459,9 @@ const BatteryManagement = () => {
                       {modelCurrentPage + 1}
                     </button>
                   )}
+                  
+                  {/* Show ellipsis if there might be more pages */}
+                  {modelHasMore && <span className="px-2 text-gray-400">...</span>}
                   
                   <button
                     onClick={() => loadBatteryModels(modelCurrentPage + 1)}
@@ -675,20 +701,21 @@ const BatteryManagement = () => {
                     ← Trước
                   </button>
                   
-                  {/* Show page numbers */}
-                  {batteryCurrentPage > 2 && (
-                    <>
-                      <button
-                        onClick={() => loadBatteries(1)}
-                        className="px-3 py-1 text-sm border border-gray-300 rounded hover:bg-gray-50"
-                      >
-                        1
-                      </button>
-                      {batteryCurrentPage > 3 && <span className="px-2 text-gray-400">...</span>}
-                    </>
-                  )}
+                  {/* Always show page 1 */}
+                  <button
+                    onClick={() => loadBatteries(1)}
+                    className={`px-3 py-1 text-sm border border-gray-300 rounded hover:bg-gray-50 ${
+                      batteryCurrentPage === 1 ? 'bg-[#0028b8] text-white font-medium' : ''
+                    }`}
+                  >
+                    1
+                  </button>
                   
-                  {batteryCurrentPage > 1 && (
+                  {/* Show ellipsis if current page is far from start */}
+                  {batteryCurrentPage > 3 && <span className="px-2 text-gray-400">...</span>}
+                  
+                  {/* Show page before current */}
+                  {batteryCurrentPage > 2 && (
                     <button
                       onClick={() => loadBatteries(batteryCurrentPage - 1)}
                       className="px-3 py-1 text-sm border border-gray-300 rounded hover:bg-gray-50"
@@ -697,10 +724,14 @@ const BatteryManagement = () => {
                     </button>
                   )}
                   
-                  <span className="px-3 py-1 text-sm bg-[#0028b8] text-white rounded font-medium">
-                    {batteryCurrentPage}
-                  </span>
+                  {/* Show current page (if not page 1) */}
+                  {batteryCurrentPage > 1 && (
+                    <span className="px-3 py-1 text-sm bg-[#0028b8] text-white rounded font-medium">
+                      {batteryCurrentPage}
+                    </span>
+                  )}
                   
+                  {/* Show page after current */}
                   {batteryHasMore && (
                     <button
                       onClick={() => loadBatteries(batteryCurrentPage + 1)}
@@ -709,6 +740,9 @@ const BatteryManagement = () => {
                       {batteryCurrentPage + 1}
                     </button>
                   )}
+                  
+                  {/* Show ellipsis if there might be more pages */}
+                  {batteryHasMore && <span className="px-2 text-gray-400">...</span>}
                   
                   <button
                     onClick={() => loadBatteries(batteryCurrentPage + 1)}

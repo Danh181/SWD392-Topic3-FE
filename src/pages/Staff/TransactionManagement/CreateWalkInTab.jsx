@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { createWalkInSwap } from '../../../services/swapTransaction';
-import { getAllBatteries, getBatteriesByStation } from '../../../services/battery';
+import { getAllBatteriesComplete, getBatteriesByStationComplete } from '../../../services/battery';
 import { getUsers } from '../../../services/admin';
 import { getVehiclesByDriverId } from '../../../services/vehicle';
 
@@ -35,8 +35,8 @@ const CreateWalkInTab = () => {
       setDrivers(driversOnly);
       
       // For walk-in, we'll load batteries when vehicle is selected and we have station context
-      // For now, load all batteries as fallback
-      const batteriesData = await getAllBatteries(1, 100);
+      // For now, load ALL batteries as fallback (not paginated)
+      const batteriesData = await getAllBatteriesComplete();
       setBatteries(batteriesData.filter(b => b.status === 'FULL'));
     } catch (e) {
       setError('Không thể tải dữ liệu: ' + (e?.message || ''));
@@ -63,7 +63,7 @@ const CreateWalkInTab = () => {
         // Get station ID from existing swaps (staff's station)
         const staffStationId = swaps[0]?.stationId;
         if (staffStationId) {
-          const stationBatteries = await getBatteriesByStation(staffStationId);
+          const stationBatteries = await getBatteriesByStationComplete(staffStationId);
           setBatteries(stationBatteries.filter(b => b.status === 'FULL'));
           setStationId(staffStationId);
           return;
@@ -74,7 +74,7 @@ const CreateWalkInTab = () => {
     }
     
     // Fallback to all batteries if station detection fails
-    const allBatteries = await getAllBatteries(1, 100);
+    const allBatteries = await getAllBatteriesComplete();
     setBatteries(allBatteries.filter(b => b.status === 'FULL'));
   };
 

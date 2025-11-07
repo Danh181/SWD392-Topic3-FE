@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { getAllUnconfirmedSwaps, confirmScheduledSwap, getSwapStatusText } from '../../../services/swapTransaction';
-import { getAllBatteries, getBatteriesByStation } from '../../../services/battery';
+import { getBatteriesByStationComplete } from '../../../services/battery';
 import { getVehiclesByDriverId } from '../../../services/vehicle';
 import { getStationById } from '../../../services/station';
 import { getUsers } from '../../../services/admin';
@@ -35,8 +35,8 @@ const SwapConfirmationTab = ({ onUpdate }) => {
         stationId = unconfirmedSwaps[0].stationId;
       }
       
-      // Load batteries for this station only
-      const batteriesData = stationId ? await getBatteriesByStation(stationId) : [];
+      // Load batteries for this station only - get ALL batteries (all pages)
+      const batteriesData = stationId ? await getBatteriesByStationComplete(stationId) : [];
       
       // Enrich swaps with driver info and fetch vehicle/station
       const enrichedSwaps = await Promise.all(
