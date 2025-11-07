@@ -328,9 +328,25 @@ export async function getStaffBatteryInventoryPaginated(page = 1) {
       try {
         // Fallback: Get all batteries and filter by station
         const allBatteriesData = await getAllBatteriesComplete();
-        const stationBatteries = allBatteriesData.filter(b => 
-          b.currentStationId === stationInfo.stationId
-        );
+        console.log('📊 Sample battery object:', allBatteriesData[0]);
+        console.log('🔍 Looking for stationId:', stationInfo.stationId);
+        console.log('🔍 Station name:', stationInfo.stationName);
+        
+        // Try multiple possible field names for station
+        const stationBatteries = allBatteriesData.filter(b => {
+          // Check all possible station reference fields
+          const matches = 
+            b.currentStationId === stationInfo.stationId ||
+            b.stationId === stationInfo.stationId ||
+            b.currentStationName === stationInfo.stationName ||
+            b.stationName === stationInfo.stationName;
+          
+          if (matches) {
+            console.log('✓ Battery matched:', b.batterySerial, b);
+          }
+          return matches;
+        });
+        
         console.log(`✅ Fallback successful: Found ${stationBatteries.length} batteries`);
         
         return {
@@ -528,12 +544,25 @@ export async function getBatteriesByStationComplete(stationId) {
         if (currentPage === 1 && pageError?.response?.status === 500) {
           console.log('🔄 API /battery/station/{id}/status failed, trying fallback...');
           try {
-            // Fallback: Get ALL batteries and filter by currentStationName
+            // Fallback: Get ALL batteries and filter by station
             const allBatteriesData = await getAllBatteriesComplete();
-            const stationBatteries = allBatteriesData.filter(b => 
-              b.currentStationId === stationId && b.status === 'FULL'
-            );
-            console.log(`✅ Fallback successful: Found ${stationBatteries.length} batteries`);
+            console.log('📊 Sample battery object:', allBatteriesData[0]);
+            console.log('🔍 Looking for stationId:', stationId);
+            
+            // Try multiple possible field names for station
+            const stationBatteries = allBatteriesData.filter(b => {
+              // Check all possible station reference fields
+              const matches = 
+                (b.currentStationId === stationId || b.stationId === stationId) && 
+                b.status === 'FULL';
+              
+              if (matches) {
+                console.log('✓ FULL battery matched:', b.batterySerial, b);
+              }
+              return matches;
+            });
+            
+            console.log(`✅ Fallback successful: Found ${stationBatteries.length} FULL batteries`);
             return stationBatteries;
           } catch (fallbackError) {
             console.error('❌ Fallback also failed:', fallbackError);
