@@ -254,22 +254,19 @@ export async function getStaffBatteryInventory() {
     const statuses = ['FULL', 'IN_USE', 'CHARGING', 'MAINTENANCE', 'FAULTY', 'RETIRED'];
     const allBatteries = [];
     
-    const promises = statuses.map(async (status) => {
+    // Load batteries for each status SEQUENTIALLY to avoid overwhelming backend
+    for (const status of statuses) {
       try {
         const res = await API.get(`/api/battery/station/${stationInfo.stationId}/status`, { 
           params: { status, page: 1 } 
         });
-        return res?.data?.data || [];
+        const batteries = res?.data?.data || [];
+        if (Array.isArray(batteries) && batteries.length > 0) {
+          allBatteries.push(...batteries);
+        }
       } catch (error) {
-        console.warn(`Failed to get batteries for status ${status}:`, error?.response?.status);
-        return [];
-      }
-    });
-    
-    const results = await Promise.all(promises);
-    for (const batteries of results) {
-      if (Array.isArray(batteries)) {
-        allBatteries.push(...batteries);
+        console.warn(`Failed to get batteries for status ${status}:`, error?.response?.status || error.message);
+        // Continue with other statuses even if one fails
       }
     }
     
@@ -298,34 +295,29 @@ export async function getStaffBatteryInventoryPaginated(page = 1) {
     // Get batteries for all statuses at this station for specific page
     const statuses = ['FULL', 'IN_USE', 'CHARGING', 'MAINTENANCE', 'FAULTY', 'RETIRED'];
     const allBatteries = [];
+    let hasMore = false;
     
-    // For pagination, we need to get batteries from each status and combine
-    // Backend uses LIST_SIZE = 10, so we'll get page data for each status
-    const promises = statuses.map(async (status) => {
+    // Load batteries for each status SEQUENTIALLY to avoid overwhelming backend
+    for (const status of statuses) {
       try {
         const res = await API.get(`/api/battery/station/${stationInfo.stationId}/status`, { 
           params: { status, page } 
         });
         const batteries = res?.data?.data || [];
-        return { status, batteries };
+        
+        if (Array.isArray(batteries) && batteries.length > 0) {
+          allBatteries.push(...batteries);
+          
+          // If any status returned 10 items, there might be more pages
+          if (batteries.length === 10) {
+            hasMore = true;
+          }
+        }
       } catch (error) {
-        console.warn(`Failed to get batteries for status ${status}:`, error?.response?.status);
-        return { status, batteries: [] };
-      }
-    });
-    
-    const results = await Promise.all(promises);
-    let totalBatteriesThisPage = 0;
-    
-    for (const { batteries } of results) {
-      if (Array.isArray(batteries)) {
-        allBatteries.push(...batteries);
-        totalBatteriesThisPage += batteries.length;
+        console.warn(`Failed to get batteries for status ${status}:`, error?.response?.status || error.message);
+        // Continue with other statuses even if one fails
       }
     }
-    
-    // Check if there are more pages by seeing if any status returned full page (10 items)
-    const hasMore = results.some(({ batteries }) => batteries.length === 10);
     
     console.log(`Found ${allBatteries.length} batteries for station ${stationInfo.stationId} page ${page}`);
     
@@ -482,21 +474,39 @@ export async function getBatteriesByStationComplete(stationId) {
     const allBatteries = [];
     let currentPage = 1;
     let hasMore = true;
+    let consecutiveErrors = 0;
+    const MAX_ERRORS = 2; // Stop after 2 consecutive errors
     
-    while (hasMore) {
-      const batteries = await getBatteriesByStationAndStatus(stationId, 'FULL', currentPage);
-      
-      if (batteries.length === 0) {
-        hasMore = false;
-      } else {
-        allBatteries.push(...batteries);
+    while (hasMore && consecutiveErrors < MAX_ERRORS) {
+      try {
+        const batteries = await getBatteriesByStationAndStatus(stationId, 'FULL', currentPage);
         
-        // If we got less than 10 batteries, we've reached the end
-        if (batteries.length < 10) {
+        // Reset error counter on success
+        consecutiveErrors = 0;
+        
+        if (batteries.length === 0) {
           hasMore = false;
         } else {
-          currentPage++;
+          allBatteries.push(...batteries);
+          
+          // If we got less than 10 batteries, we've reached the end
+          if (batteries.length < 10) {
+            hasMore = false;
+          } else {
+            currentPage++;
+          }
         }
+      } catch (pageError) {
+        consecutiveErrors++;
+        console.warn(`Failed to load page ${currentPage} for station ${stationId}:`, pageError?.response?.status || pageError.message);
+        
+        // If first page fails, throw error
+        if (currentPage === 1) {
+          throw pageError;
+        }
+        
+        // Otherwise, stop pagination but return what we have
+        hasMore = false;
       }
     }
     
@@ -504,6 +514,7 @@ export async function getBatteriesByStationComplete(stationId) {
     return allBatteries;
   } catch (error) {
     console.error('Failed to get all batteries by station:', error);
+    // Return empty array instead of throwing - allow UI to show "no batteries available"
     return [];
   }
 }
@@ -519,19 +530,18 @@ export async function getAllBatteriesByStation(stationId) {
     const statuses = ['FULL', 'IN_USE', 'CHARGING', 'MAINTENANCE', 'FAULTY', 'RETIRED'];
     const allBatteries = [];
     
-    // Fetch batteries for each status in parallel
-    const promises = statuses.map(status => 
-      getBatteriesByStationAndStatus(stationId, status, 1).catch(() => [])
-    );
-    
-    const results = await Promise.all(promises);
-    
-    // Combine all results
-    results.forEach(batteries => {
-      if (Array.isArray(batteries)) {
-        allBatteries.push(...batteries);
+    // Fetch batteries for each status SEQUENTIALLY to avoid overwhelming backend
+    for (const status of statuses) {
+      try {
+        const batteries = await getBatteriesByStationAndStatus(stationId, status, 1);
+        if (Array.isArray(batteries) && batteries.length > 0) {
+          allBatteries.push(...batteries);
+        }
+      } catch (error) {
+        console.warn(`Failed to get batteries for status ${status}:`, error?.response?.status || error.message);
+        // Continue with other statuses
       }
-    });
+    }
     
     console.log(`Total batteries found for station ${stationId}:`, allBatteries.length);
     return allBatteries;
