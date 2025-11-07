@@ -97,9 +97,19 @@ API.interceptors.response.use(
 				console.error('❌ Token refresh failed: No refresh token available.');
 				
 				// Check if we're on a public page that doesn't require auth
-				const publicPaths = ['/', '/mainpage', '/stations', '/login', '/register'];
 				const currentPath = window.location.pathname;
-				const isPublicPage = publicPaths.some(path => currentPath === path || currentPath.startsWith('/stations/'));
+				const publicPaths = [
+					'/',
+					'/mainpage',
+					'/stations', 
+					'/login', 
+					'/register'
+				];
+				
+				const isPublicPage = publicPaths.some(path => {
+					// Exact match or starts with path (for sub-routes like /mainpage/HomePage, /stations/:id)
+					return currentPath === path || currentPath.startsWith(path + '/');
+				});
 				
 				if (!isPublicPage) {
 					// Only redirect and alert if on a protected page
@@ -137,9 +147,19 @@ API.interceptors.response.use(
 				clearTokens();
 				
 				// Check if we're on a public page
-				const publicPaths = ['/', '/mainpage', '/stations', '/login', '/register'];
 				const currentPath = window.location.pathname;
-				const isPublicPage = publicPaths.some(path => currentPath === path || currentPath.startsWith('/stations/'));
+				const publicPaths = [
+					'/',
+					'/mainpage',
+					'/stations', 
+					'/login', 
+					'/register'
+				];
+				
+				const isPublicPage = publicPaths.some(path => {
+					// Exact match or starts with path (for sub-routes like /mainpage/HomePage, /stations/:id)
+					return currentPath === path || currentPath.startsWith(path + '/');
+				});
 				
 				if (!isPublicPage) {
 					// Only redirect and alert if on a protected page
