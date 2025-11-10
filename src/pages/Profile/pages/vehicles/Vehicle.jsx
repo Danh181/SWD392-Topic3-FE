@@ -61,11 +61,11 @@ const Vehicle = () => {
         return;
       }
 
-      // Validate capacity (integer >= 1)
+      // Validate capacity (must be exactly 1)
       const capRaw = form.batteryCapacity?.toString().trim();
       const capacity = Number.parseInt(capRaw, 10);
-      if (!Number.isInteger(capacity) || capacity < 1) {
-        setError('Dung lượng pin phải là số nguyên dương');
+      if (!Number.isInteger(capacity) || capacity !== 1) {
+        setError('Số lượng pin phải bằng 1');
         setSaving(false);
         return;
       }
@@ -169,11 +169,11 @@ const Vehicle = () => {
         return;
       }
 
-      // Battery capacity: integer >= 1
+      // Battery capacity: must be exactly 1
       const capRaw = editForm.batteryCapacity?.toString().trim();
       const capacity = Number.parseInt(capRaw, 10);
-      if (!Number.isInteger(capacity) || capacity < 1) {
-        setError('Dung lượng pin phải là số nguyên dương');
+      if (!Number.isInteger(capacity) || capacity !== 1) {
+        setError('Số lượng pin phải bằng 1');
         setSaving(false);
         return;
       }
@@ -253,7 +253,7 @@ const Vehicle = () => {
                   <th className="p-2">Năm</th>
                   <th className="p-2">Biển số</th>
                   <th className="p-2">Loại pin</th>
-                  <th className="p-2">Dung lượng (kWh)</th>
+                  <th className="p-2">Số lượng pin</th>
                   <th className="p-2">Trạng thái</th>
                   <th className="p-2">Thao tác</th>
                 </tr>
@@ -296,7 +296,7 @@ const Vehicle = () => {
             <input name="year" value={editForm.year} onChange={handleEditChange} placeholder="Năm" type="number" className="border rounded px-3 py-2" required />
             <input name="licensePlate" value={editForm.licensePlate} onChange={handleEditChange} placeholder="Biển số" className="border rounded px-3 py-2" required />
             <input name="batteryType" value={editForm.batteryType} onChange={handleEditChange} placeholder="Loại pin (VD: LFP-60)" className="border rounded px-3 py-2" required disabled={editLock.batteryType} pattern="^[A-Za-z]{2,4}-\d{2,3}$" title="2-4 chữ cái + dấu gạch nối + 2-3 chữ số, ví dụ: LFP-60" />
-            <input name="batteryCapacity" value={editForm.batteryCapacity} onChange={handleEditChange} placeholder="Dung lượng (kWh)" type="number" step="1" min="1" className="border rounded px-3 py-2" required />
+            <input name="batteryCapacity" value={editForm.batteryCapacity} onChange={handleEditChange} placeholder="Số lượng pin" type="number" step="1" min="1" max="1" className="border rounded px-3 py-2" required />
             <div className="md:col-span-2 flex justify-end gap-2">
               <button type="button" onClick={handleCancelEdit} className="px-4 py-2 rounded bg-gray-200 text-gray-700 hover:bg-gray-300">
                 Hủy
@@ -317,7 +317,7 @@ const Vehicle = () => {
             <input name="year" value={form.year} onChange={handleChange} placeholder="Năm" type="number" className="border rounded px-3 py-2" required min={2000} max={new Date().getFullYear() + 1} />
             <input name="licensePlate" value={form.licensePlate} onChange={handleChange} placeholder="Biển số" className="border rounded px-3 py-2" required />
             <input name="batteryType" value={form.batteryType} onChange={handleChange} placeholder="Loại pin (VD: LFP-60)" className="border rounded px-3 py-2" required pattern="^[A-Za-z]{2,4}-\d{2,3}$" title="2-4 chữ cái + dấu gạch nối + 2-3 chữ số, ví dụ: LFP-60" />
-            <input name="batteryCapacity" value={form.batteryCapacity} onChange={handleChange} placeholder="Dung lượng (kWh)" type="number" step="1" min="1" className="border rounded px-3 py-2" required />
+            <input name="batteryCapacity" value={form.batteryCapacity} onChange={handleChange} placeholder="Số lượng pin" type="number" step="1" min="1" max="1" className="border rounded px-3 py-2" required />
             <div className="md:col-span-2 flex justify-end">
               <button type="submit" disabled={saving} className="px-4 py-2 rounded bg-[#0028b8] text-white hover:bg-[#001a8b] disabled:opacity-50">
                 {saving ? 'Đang lưu...' : 'Thêm phương tiện'}

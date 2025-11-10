@@ -558,7 +558,7 @@ const BookSwapPage = () => {
                           <span className="font-semibold text-gray-900">{selectedModel.type}</span>
                         </div>
                         <div className="flex justify-between pt-2 border-t border-gray-200">
-                          <span className="text-gray-600">Chi phí dự kiến:</span>
+                          <span className="text-gray-600">Chi phí:</span>
                           <span className="font-bold text-green-600 text-lg">
                             {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(100000)}
                           </span>
